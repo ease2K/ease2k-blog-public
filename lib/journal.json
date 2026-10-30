@@ -1,0 +1,18 @@
+[
+    {
+        "id": "0bbd9f8c-1ba7-49bf-ace5-66058a3c459d",
+        "kind": "daily",
+        "title": "2026.10.29小记",
+        "enTitle": "",
+        "summary": "个人博客网站正式上线公网 今天部署了该网站，对细节做了一些修改 学习了jdbc内容",
+        "enSummary": "",
+        "body": "个人博客网站正式上线公网\n今天部署了该网站，对细节做了一些修改\n学习了jdbc内容",
+        "enBody": "",
+        "date": "2026-10-29T07:54:23.965Z",
+        "tags": [
+            "生活"
+        ],
+        "visibility": "public",
+        "read": 1
+    }
+]

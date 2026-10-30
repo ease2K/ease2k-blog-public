@@ -1,0 +1,270 @@
+{
+    "codeforces": {
+        "rating": 1630,
+        "maxRating": 1630,
+        "history": [
+            {
+                "id": "2217",
+                "name": "Codeforces Round 1091 (Div. 2) and CodeCraft 26",
+                "date": "2026-04-07T16:50:00.000Z",
+                "oldRating": 0,
+                "rating": 638,
+                "rank": 801,
+                "href": "https://codeforces.com/contest/2217"
+            },
+            {
+                "id": "2220",
+                "name": "Codeforces Round 1093 (Div. 2)",
+                "date": "2026-04-13T16:35:00.000Z",
+                "oldRating": 638,
+                "rating": 896,
+                "rank": 6494,
+                "href": "https://codeforces.com/contest/2220"
+            },
+            {
+                "id": "2225",
+                "name": "Educational Codeforces Round 189 (Rated for Div. 2)",
+                "date": "2026-04-21T16:35:00.000Z",
+                "oldRating": 896,
+                "rating": 1081,
+                "rank": 6181,
+                "href": "https://codeforces.com/contest/2225"
+            },
+            {
+                "id": "2226",
+                "name": "Codeforces Round 1095 (Div. 2)",
+                "date": "2026-04-28T16:50:00.000Z",
+                "oldRating": 1081,
+                "rating": 1262,
+                "rank": 2179,
+                "href": "https://codeforces.com/contest/2226"
+            },
+            {
+                "id": "2227",
+                "name": "Codeforces Round 1096 (Div. 3)",
+                "date": "2026-04-30T17:05:00.000Z",
+                "oldRating": 1262,
+                "rating": 1328,
+                "rank": 3677,
+                "href": "https://codeforces.com/contest/2227"
+            },
+            {
+                "id": "2230",
+                "name": "Educational Codeforces Round 190 (Rated for Div. 2)",
+                "date": "2026-05-18T16:35:00.000Z",
+                "oldRating": 1328,
+                "rating": 1373,
+                "rank": 3891,
+                "href": "https://codeforces.com/contest/2230"
+            },
+            {
+                "id": "2232",
+                "name": "Codeforces Round 1101 (Div. 2)",
+                "date": "2026-05-30T16:35:00.000Z",
+                "oldRating": 1373,
+                "rating": 1371,
+                "rank": 4807,
+                "href": "https://codeforces.com/contest/2232"
+            },
+            {
+                "id": "2234",
+                "name": "Codeforces Round 1102 (Div. 2)",
+                "date": "2026-06-07T16:50:00.000Z",
+                "oldRating": 1371,
+                "rating": 1357,
+                "rank": 5323,
+                "href": "https://codeforces.com/contest/2234"
+            },
+            {
+                "id": "2233",
+                "name": "Educational Codeforces Round 191 (Rated for Div. 2)",
+                "date": "2026-06-09T16:35:00.000Z",
+                "oldRating": 1357,
+                "rating": 1380,
+                "rank": 3549,
+                "href": "https://codeforces.com/contest/2233"
+            },
+            {
+                "id": "2237",
+                "name": "Order Capital Round 2 (Codeforces Round 1104, Div. 1 + Div. 2)",
+                "date": "2026-06-18T17:35:00.000Z",
+                "oldRating": 1380,
+                "rating": 1490,
+                "rank": 1470,
+                "href": "https://codeforces.com/contest/2237"
+            },
+            {
+                "id": "2241",
+                "name": "Codeforces Round 1107 (Div. 3)",
+                "date": "2026-06-30T16:50:00.000Z",
+                "oldRating": 1490,
+                "rating": 1614,
+                "rank": 213,
+                "href": "https://codeforces.com/contest/2241"
+            },
+            {
+                "id": "2242",
+                "name": "Educational Codeforces Round 192 (Rated for Div. 2)",
+                "date": "2026-07-06T16:35:00.000Z",
+                "oldRating": 1614,
+                "rating": 1544,
+                "rank": 4574,
+                "href": "https://codeforces.com/contest/2242"
+            },
+            {
+                "id": "2246",
+                "name": "Codeforces Round 1108 (Div. 2)",
+                "date": "2026-07-12T16:50:00.000Z",
+                "oldRating": 1544,
+                "rating": 1511,
+                "rank": 3627,
+                "href": "https://codeforces.com/contest/2246"
+            },
+            {
+                "id": "2244",
+                "name": "Codeforces Round 1109 (Div. 3)",
+                "date": "2026-07-14T16:50:00.000Z",
+                "oldRating": 1511,
+                "rating": 1526,
+                "rank": 1539,
+                "href": "https://codeforces.com/contest/2244"
+            },
+            {
+                "id": "2254",
+                "name": "Codeforces Round 1114 (Div. 3)",
+                "date": "2026-08-04T16:50:00.000Z",
+                "oldRating": 1526,
+                "rating": 1585,
+                "rank": 674,
+                "href": "https://codeforces.com/contest/2254"
+            },
+            {
+                "id": "2260",
+                "name": "Educational Codeforces Round 194 (Rated for Div. 2)",
+                "date": "2026-09-08T16:35:00.000Z",
+                "oldRating": 1585,
+                "rating": 1630,
+                "rank": 978,
+                "href": "https://codeforces.com/contest/2260"
+            }
+        ],
+        "fetchedAt": "2026-10-29T11:23:45.617Z"
+    },
+    "atcoder": {
+        "rating": 1234,
+        "maxRating": 1234,
+        "history": [
+            {
+                "id": "abc451",
+                "name": "AtCoder Beginner Contest 451",
+                "enName": "AtCoder Beginner Contest 451",
+                "date": "2026-03-28T13:40:00.000Z",
+                "oldRating": 0,
+                "rating": 128,
+                "rank": 2966,
+                "href": "https://atcoder.jp/contests/abc451"
+            },
+            {
+                "id": "abc453",
+                "name": "AtCoder Beginner Contest 453",
+                "enName": "AtCoder Beginner Contest 453",
+                "date": "2026-04-11T13:40:00.000Z",
+                "oldRating": 128,
+                "rating": 227,
+                "rank": 5863,
+                "href": "https://atcoder.jp/contests/abc453"
+            },
+            {
+                "id": "abc454",
+                "name": "キーサイト・テクノロジープログラミングコンテスト（AtCoder Beginner Contest 454）",
+                "enName": "Keysight Technologies Programming Contest（AtCoder Beginner Contest 454）",
+                "date": "2026-04-18T13:40:00.000Z",
+                "oldRating": 227,
+                "rating": 157,
+                "rank": 10022,
+                "href": "https://atcoder.jp/contests/abc454"
+            },
+            {
+                "id": "abc455",
+                "name": "Ｓｋｙ株式会社プログラミングコンテスト2026（AtCoder Beginner Contest 455）",
+                "enName": "Ｓｋｙ Inc, Programming Contest 2026 (AtCoder Beginner Contest 455)",
+                "date": "2026-04-25T13:40:00.000Z",
+                "oldRating": 157,
+                "rating": 120,
+                "rank": 10243,
+                "href": "https://atcoder.jp/contests/abc455"
+            },
+            {
+                "id": "abc463",
+                "name": "AtCoder Beginner Contest 463",
+                "enName": "AtCoder Beginner Contest 463",
+                "date": "2026-06-20T13:40:00.000Z",
+                "oldRating": 120,
+                "rating": 446,
+                "rank": 1186,
+                "href": "https://atcoder.jp/contests/abc463"
+            },
+            {
+                "id": "abc467",
+                "name": "AtCoder Beginner Contest 467",
+                "enName": "AtCoder Beginner Contest 467",
+                "date": "2026-07-18T13:40:00.000Z",
+                "oldRating": 446,
+                "rating": 721,
+                "rank": 1273,
+                "href": "https://atcoder.jp/contests/abc467"
+            },
+            {
+                "id": "abc469",
+                "name": "AtCoder Beginner Contest 469",
+                "enName": "AtCoder Beginner Contest 469",
+                "date": "2026-08-01T13:40:00.000Z",
+                "oldRating": 721,
+                "rating": 933,
+                "rank": 885,
+                "href": "https://atcoder.jp/contests/abc469"
+            },
+            {
+                "id": "abc473",
+                "name": "AtCoder Beginner Contest 473",
+                "enName": "AtCoder Beginner Contest 473",
+                "date": "2026-08-29T13:40:00.000Z",
+                "oldRating": 933,
+                "rating": 1095,
+                "rank": 790,
+                "href": "https://atcoder.jp/contests/abc473"
+            },
+            {
+                "id": "abc477",
+                "name": "UNICORNプログラミングコンテスト2026(AtCoder Beginner Contest 477)",
+                "enName": "UNICORNProgramming Contest2026(AtCoder Beginner Contest 477)",
+                "date": "2026-09-26T13:40:00.000Z",
+                "oldRating": 1095,
+                "rating": 1167,
+                "rank": 1287,
+                "href": "https://atcoder.jp/contests/abc477"
+            },
+            {
+                "id": "abc478",
+                "name": "AtCoder Beginner Contest 478",
+                "enName": "AtCoder Beginner Contest 478",
+                "date": "2026-10-03T13:40:00.000Z",
+                "oldRating": 1167,
+                "rating": 1177,
+                "rank": 2533,
+                "href": "https://atcoder.jp/contests/abc478"
+            },
+            {
+                "id": "abc481",
+                "name": "SMBCプログラミングコンテスト #2（AtCoder Beginner Contest 481）",
+                "enName": "SMBC Programming Contest #2 (AtCoder Beginner Contest 481）",
+                "date": "2026-10-24T13:40:00.000Z",
+                "oldRating": 1177,
+                "rating": 1234,
+                "rank": 1049,
+                "href": "https://atcoder.jp/contests/abc481"
+            }
+        ],
+        "fetchedAt": "2026-10-29T11:23:45.620Z"
+    }
+}
