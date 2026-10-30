@@ -1,5 +1,6 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Home, BookOpen, Folder, Trophy, UserRound, Search, Sun, Moon, ArrowUpRight, ChevronRight, ArrowLeft, Clock3, CalendarDays, Globe2, X, Code2, Database, Braces, NotebookPen, Coffee, ArrowUp, GraduationCap, Pin } from "lucide-react";
+import Body, { preloadBody } from "@/components/article-body";
 import Ratings from "@/components/ratings";
 import ArticleToc, { type Heading, type OutlineHandler } from "@/components/article-toc";
 import { profiles, portals, authoredProblems, awards, orderedAwards, sections, inSection, type Entry } from "@/lib/content";
@@ -29,10 +30,6 @@ function Nickname() {
 
 function IconLink({ href, children }: { href: string; children: ReactNode }) {
     return <a className="profile-link" href={href} target="_blank" rel="noopener noreferrer">{children}<ArrowUpRight size={15} /></a>;
-}
-const MarkdownBody = lazy(() => import("@/components/markdown-body"));
-function Body({ text, lang, onOutline }: { text: string; lang: Lang; onOutline?: OutlineHandler }) {
-    return <Suspense fallback={<p className="language-note" role="status">{lang === "zh" ? "正在加载正文…" : "Loading article…"}</p>}><MarkdownBody text={text} lang={lang} onOutline={onOutline} /></Suspense>;
 }
 function awardDate(value: string, lang: Lang) {
     const monthOnly = value.length === 7;
@@ -131,7 +128,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
         if (to === path) { main.current?.focus({ preventScroll: true }); focusPage.current = false; }
     }
     function internal(href: string, children: ReactNode, className = "") {
-        return <a key={href + "|" + className} href={href} className={className} aria-label={className === "entry-open" ? t("查看详情", "Read entry") : undefined} aria-current={href === path || (className.startsWith("nav-link") && href === link(activeNav)) ? "page" : undefined} onClick={e => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); go(href); }}>{children}</a>;
+        return <a key={href + "|" + className} href={href} className={className} onPointerEnter={() => { if (href.startsWith("/entry/")) preloadBody(); }} onFocus={() => { if (href.startsWith("/entry/")) preloadBody(); }} aria-label={className === "entry-open" ? t("查看详情", "Read entry") : undefined} aria-current={href === path || (className.startsWith("nav-link") && href === link(activeNav)) ? "page" : undefined} onClick={e => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); go(href); }}>{children}</a>;
     }
     function tags(e: Entry) {
         return <div className="tags">{e.tags.map(v => <span key={v}>{tagName(v)}</span>)}{e.sample && <span className="sample">{t("示例文章", "Sample")}</span>}</div>;

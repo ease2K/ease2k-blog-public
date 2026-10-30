@@ -424,3 +424,5 @@ dialog { background: var(--surface); color: var(--text); border: 1px solid var(-
 :root[data-theme="dark"] .rating-gain { color: #71cc94; }:root[data-theme="dark"] .rating-loss { color: #ff9494; }
 .rating-history-note { margin: 14px 0 0; color: var(--muted); font-size: 10px; line-height: 1.8; }
 @media (max-width: 540px) { .rating-history { padding: 17px 13px 14px; }.rating-history-heading { align-items: flex-start; flex-direction: column; gap: 12px; }.rating-history-chart { margin-top: 10px; }.rating-contest-select { flex-direction: column; align-items: stretch; gap: 6px; }.rating-history-tabs button { min-height: 36px; padding-inline: 13px; }.rating-history-chart text { font-size: 13px; } }
+
+.body-retry { margin-left: 12px; color: var(--blue-text); text-decoration: underline; cursor: pointer; }

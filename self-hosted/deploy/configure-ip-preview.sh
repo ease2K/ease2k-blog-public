@@ -29,6 +29,12 @@ server {
     listen 80;
     server_name __BLOG_PUBLIC_IP__;
     charset utf-8;
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_min_length 1024;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css application/json application/javascript text/javascript image/svg+xml;
     server_tokens off;
     add_header X-Ease2k-Preview "1" always;
 

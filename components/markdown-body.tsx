@@ -2,13 +2,13 @@ import { Children, isValidElement, useEffect, useMemo, useRef, useState, type Re
 import { Check, Copy } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
 import ArticleToc, { type Heading, type OutlineHandler } from "@/components/article-toc";
 import { copyText } from "@/lib/clipboard";
 
 type Lang = "zh" | "en";
+type MathPlugins = typeof import("@/lib/math-plugins");
+let mathRequest: Promise<MathPlugins> | undefined;
+function loadMath() { return mathRequest ||= import("@/lib/math-plugins").catch(error => { mathRequest = undefined; throw error; }); }
 function CodeBlock({ code, language, lang }: { code: string; language: string; lang: Lang }) {
     const [copied, setCopied] = useState(false), [failed, setFailed] = useState(false);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -21,6 +21,15 @@ function CodeBlock({ code, language, lang }: { code: string; language: string; l
 
 export default function MarkdownBody({ text, lang, onOutline }: { text: string; lang: Lang; onOutline?: OutlineHandler }) {
     const content = useRef<HTMLDivElement>(null);
+    const needsMath = /\$\$|(^|[^\\])\$(?=\S)[^\n]*[^\\]\$/.test(text);
+    const [math, setMath] = useState<MathPlugins | null>(null), [mathFailed, setMathFailed] = useState(false);
+    useEffect(() => {
+        if (!needsMath || math) return;
+        let active = true;
+        setMathFailed(false);
+        loadMath().then(value => { if (active) setMath(value); }).catch(() => { if (active) setMathFailed(true); });
+        return () => { active = false; };
+    }, [text, needsMath, math]);
     const [headings, setHeadings] = useState<Heading[]>([]), [activeId, setActiveId] = useState("");
     useEffect(() => {
         const nodes = Array.from(content.current?.querySelectorAll<HTMLElement>("h2, h3, h4") || []);
@@ -45,8 +54,8 @@ export default function MarkdownBody({ text, lang, onOutline }: { text: string; 
         window.addEventListener("scroll", schedule, { passive: true });
         window.addEventListener("resize", schedule);
         return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); };
-    }, [text, lang, onOutline]);
-    const markdown = useMemo(() => <Markdown skipHtml remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[[rehypeKatex, { trust: false, strict: "ignore" }]]} components={{
+    }, [text, lang, onOutline, math]);
+    const markdown = useMemo(() => <Markdown skipHtml remarkPlugins={needsMath && math ? [remarkGfm, math.remarkMath] : [remarkGfm]} rehypePlugins={needsMath && math ? [[math.rehypeKatex, { trust: false, strict: "ignore" }]] : []} components={{
         h1: ({ children }) => <h2>{children}</h2>,
         a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
         table: ({ children }) => <div className="prose-table" role="region" aria-label={lang === "zh" ? "操作与用法表格" : "Reference table"} tabIndex={0}><table>{children}</table></div>,
@@ -56,6 +65,6 @@ export default function MarkdownBody({ text, lang, onOutline }: { text: string; 
             const language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "text";
             return <CodeBlock code={String(child.props.children || "").replace(/\n$/, "")} language={language} lang={lang} />;
         },
-    }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang]);
-    return <><ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" ref={content}>{markdown}</div></>;
+    }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math]);
+    return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" ref={content}>{markdown}</div></>;
 }
