@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
 import snapshot from "@/lib/ratings-snapshot.json";

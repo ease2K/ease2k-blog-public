@@ -1,5 +1,3 @@
-"use client";
-
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Home, BookOpen, Folder, Trophy, UserRound, Search, Sun, Moon, ArrowUpRight, ChevronRight, ArrowLeft, Clock3, CalendarDays, Globe2, X, Code2, Database, Braces, NotebookPen, Coffee, ArrowUp, GraduationCap, Pin } from "lucide-react";
 import Ratings from "@/components/ratings";

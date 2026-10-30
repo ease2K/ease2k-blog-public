@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, TrendingUp } from "lucide-react";
 import { ratingColor, ratingLevels } from "@/lib/rating-colors.mjs";

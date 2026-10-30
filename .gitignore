@@ -69,3 +69,6 @@ yarn-error.log*
 *.pfx
 id_rsa*
 id_ed25519*
+
+# Local configuration from older checkouts
+/.openai/

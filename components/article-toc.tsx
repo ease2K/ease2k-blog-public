@@ -1,5 +1,3 @@
-"use client";
-
 import { List } from "lucide-react";
 
 export type Heading = { id: string; text: string; level: number };

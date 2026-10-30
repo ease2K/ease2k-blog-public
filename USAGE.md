@@ -17,8 +17,6 @@
 第三方部分适用各自原有许可证、声明或品牌规范，本说明不改变这些许可。请保留相关版权与归属信息：
 
 - 平台图标来源与品牌说明：`public/brands/CREDITS.md`。
-- Sites Vite 插件许可：`scripts/vite/sites-vite-plugin.LICENSE`。
-- shadcn 样式许可：`vendor/shadcn-tailwind-4.13.0.LICENSE.md`。
 - npm 依赖及其他第三方代码：各包随附的许可证及版权声明。
 
 本站名称、个人账号、文章和证书不会因 Fork 自动变成使用者自己的资料。发布个人站点前请替换相应内容，避免造成身份或经历归属误解。

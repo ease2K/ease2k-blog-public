@@ -1,5 +1,3 @@
-"use client";
-
 import { Children, isValidElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 import Markdown from "react-markdown";

@@ -13,7 +13,7 @@
 | C++ 教程原稿 | `content/competitions/*.md` |
 | 获奖证书图片 | `public/awards/` |
 | 页面布局与文案 | `components/blog.tsx` |
-| 配色与样式 | `app/globals.css` |
+| 配色与样式 | `styles/globals.css` |
 
 现有公开日记已经导入 `lib/journal.json`。添加日记时可参考其中现有记录，填写唯一 id、title、summary、body、date、tags、read，kind 保持 daily；英文内容可暂留空。正文支持 Markdown。
 
