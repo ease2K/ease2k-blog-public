@@ -38,6 +38,8 @@ Open http://localhost:3000. The server listens on the loopback interface; produc
 | Styles | `styles/globals.css` |
 | Rating data and history fetching | `lib/ratings.mjs` |
 
+Use an ISO 8601 timestamp with a time zone for an entry’s `date`, such as `2026-10-30T19:30:00+08:00`. Lists and detail pages display the time to the minute in Beijing time (UTC+8). Date-only records retain a date-only display.
+
 After editing tutorial sources, run `node scripts/import-competition-tutorials.mjs` to update the tutorial data.
 
 ## Package for deployment

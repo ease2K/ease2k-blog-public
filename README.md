@@ -38,6 +38,8 @@ npm start
 | 页面样式 | `styles/globals.css` |
 | Rating 数据与历史获取 | `lib/ratings.mjs` |
 
+文章的 `date` 建议使用带时区的 ISO 8601 时间，例如 `2026-10-30T19:30:00+08:00`。列表和详情页按北京时间展示到分钟；只填写日期的记录保留日期显示。
+
 修改教程原稿后，执行 `node scripts/import-competition-tutorials.mjs` 更新教程数据。
 
 ## 打包部署
