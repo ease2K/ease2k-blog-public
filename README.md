@@ -1,5 +1,7 @@
 # ease2k 个人博客
 
+**简体中文** | [English](README.en.md)
+
 个人博客源码，包含公开日常、技术文章、项目、竞赛奖项与证书，以及 Codeforces / AtCoder Rating 和历史曲线。支持中英文、浅色与深色主题、文章目录、Markdown 和数学公式。
 
 项目使用 React、Vite 和 Node.js，运行 `self-hosted/` 中的公开只读服务，页面不提供登录、在线编辑或私密内容查看。
