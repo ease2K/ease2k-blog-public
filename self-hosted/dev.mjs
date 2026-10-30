@@ -14,7 +14,7 @@ const apiPort = probe.address().port;
 await new Promise(resolve => probe.close(resolve));
 const origin = `http://127.0.0.1:${apiPort}`;
 const backend = spawn(process.execPath, [resolve(here, 'build/server.mjs')], {
-    env: { ...process.env, PORT: String(apiPort), BLOG_ORIGIN: origin },
+    env: { ...process.env, PORT: String(apiPort), BLOG_ORIGIN: origin, BLOG_OWNER_ORIGIN: 'http://127.0.0.1:' + (process.env.VITE_PORT || 5173) },
     stdio: ['ignore', 'pipe', 'inherit'],
 });
 let server;
@@ -38,6 +38,7 @@ try {
         server: {
             host: '127.0.0.1',
             port: Number(process.env.VITE_PORT || 5173),
+            strictPort: true,
             proxy: { '/api': { target: origin, changeOrigin: true } },
             watch: { usePolling: process.env.CODEX_SANDBOX === 'seatbelt' },
         },

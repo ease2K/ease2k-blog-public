@@ -4,11 +4,14 @@ import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { entries } from './content.mjs';
 import { getRatings } from './ratings.mjs';
+import { openStore } from './owner-store.mjs';
+import { handleOwner } from './owner-http.mjs';
 
 const root = resolve(fileURLToPath(new URL('./client/', import.meta.url)));
 const origin = new URL(process.env.BLOG_ORIGIN || 'http://localhost:3000');
 const port = Number(process.env.PORT || 3000);
-const publicEntries = entries.filter(entry => entry.visibility !== 'private');
+const directory = resolve(process.env.BLOG_EDITOR_DIR || fileURLToPath(new URL('../data/editor/', import.meta.url)));
+const store = openStore(directory, entries);
 const removedRoutes = new Set(['signin', 'signout', 'login', 'logout', 'admin', 'private', 'signin-with-chatgpt', 'signout-with-chatgpt']);
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
 function json(res, data, status = 200) {
@@ -24,6 +27,7 @@ async function handle(req, res) {
     const url = new URL(req.url, origin);
     let pathname;
     try { pathname = decodeURIComponent(url.pathname); } catch { return json(res, { error: '无效地址' }, 400); }
+    if (await handleOwner(req, res, pathname, store, root, json)) return;
     if (removedRoutes.has(pathname.split('/')[1])) return json(res, { error: '页面不存在' }, 404);
     if (!['GET', 'HEAD'].includes(req.method)) {
         res.setHeader('Allow', 'GET, HEAD');
@@ -31,7 +35,7 @@ async function handle(req, res) {
     }
     if (pathname === '/healthz') return json(res, { ok: true });
     if (req.headers.host !== origin.host) return json(res, { error: '站点地址不匹配，请检查服务配置' }, 421);
-    if (pathname === '/api/blog') return json(res, { entries: publicEntries, ready: true });
+    if (pathname === '/api/blog') return json(res, { entries: store.publicEntries(), ready: true });
     if (pathname === '/api/ratings') return json(res, await getRatings());
     if (pathname.includes('\0') || pathname.includes('\\') || pathname.split('/').some(part => part.startsWith('.'))) return json(res, { error: '页面不存在' }, 404);
     let file = resolve(root, '.' + pathname);
@@ -53,4 +57,4 @@ const server = createServer((req, res) => handle(req, res).catch(err => {
 server.requestTimeout = 30000;
 server.headersTimeout = 15000;
 server.listen(port, '127.0.0.1', () => console.log(`Blog ready on 127.0.0.1:${server.address().port}`));
-for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => process.exit(0)));
+for (const signal of ['SIGINT', 'SIGTERM']) process.on(signal, () => server.close(() => { store.db.close(); process.exit(0); }));

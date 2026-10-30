@@ -22,7 +22,7 @@ const port = probe.address().port; await new Promise(resolve => probe.close(reso
 const origin = `http://127.0.0.1:${port}`;
 let child;
 async function start() {
-    child = spawn(process.execPath, ['self-hosted/build/server.mjs'], { env: { ...process.env, BLOG_DATA_DIR: dataDir, BLOG_ORIGIN: origin, PORT: String(port) }, stdio: ['ignore', 'pipe', 'pipe'] });
+    child = spawn(process.execPath, ['self-hosted/build/server.mjs'], { env: { ...process.env, BLOG_DATA_DIR: dataDir, BLOG_EDITOR_DIR: resolve(dataDir, 'editor'), BLOG_ORIGIN: origin, PORT: String(port) }, stdio: ['ignore', 'pipe', 'pipe'] });
     let errors = ''; child.stderr.on('data', chunk => errors += chunk);
     await Promise.race([new Promise(resolve => child.stdout.on('data', chunk => { if (chunk.toString().includes('Blog ready')) resolve(); })), new Promise((_, reject) => child.on('exit', code => reject(Error(`Server exited ${code}: ${errors}`))))]);
 }

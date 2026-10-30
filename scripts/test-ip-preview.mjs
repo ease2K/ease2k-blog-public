@@ -51,7 +51,7 @@ try {
     }
     assert.equal((await request('/api/blog', { method: 'HEAD' })).status, 200);
     for (const method of ['POST', 'PUT', 'DELETE', 'PATCH']) assert.equal((await request('/api/blog', { method })).status, 403, method);
-    for (const path of ['/signin', '/signin?return_to=/daily', '/signout']) assert.equal((await request(path)).status, 404, path);
+    for (const path of ['/signin', '/signin?return_to=/daily', '/signout', '/_owner', '/_owner/', '/api/owner/session', '/api/owner/entries', '/owner.html']) assert.equal((await request(path)).status, 404, path);
     // Reproduce a reload window where the previous virtual host returns 404.
     const previous = config.replace(server, `server { listen 127.0.0.1:${port}; server_name 192.0.2.1; return 404; }`);
     await writeFile(resolve(dir, 'nginx.conf'), previous);

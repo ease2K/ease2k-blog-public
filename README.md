@@ -4,7 +4,7 @@
 
 个人博客源码，包含公开日常、技术文章、项目、竞赛奖项与证书，以及 Codeforces / AtCoder Rating 和历史曲线。支持中英文、浅色与深色主题、文章目录、Markdown 和数学公式。
 
-项目使用 React、Vite 和 Node.js，运行 `self-hosted/` 中的公开只读服务，页面不提供登录、在线编辑或私密内容查看。
+项目使用 React、Vite 和 Node.js。公网展示公开内容；站主通过 SSH 隧道访问独立工作台，以密码登录后在线编辑。
 
 ## 本地开发
 
@@ -25,6 +25,24 @@ npm start
 ```
 
 启动后访问 http://localhost:3000。服务默认监听本机地址；部署时由 Nginx 转发。可通过 `PORT` 和 `BLOG_ORIGIN` 设置监听端口与服务接受的 Host，二者需与反向代理配置一致。
+
+## 站主在线编辑
+
+工作台入口为 `/_owner`，不会出现在公开导航中。当前只允许本机或 SSH 隧道访问，公网代理访问站主入口和接口会返回 404。
+
+本机试用：
+
+```bash
+npm run build
+npm run owner:setup
+npm start
+```
+
+在终端设置至少 12 位密码，输入不会显示。随后打开 http://localhost:3000/_owner 登录。密码只保存为加盐哈希，不要写入源码、环境示例或提交记录。
+
+服务器首次设置和 SSH 隧道方法见 [站主工作台说明](self-hosted/OWNER.md)。工作台支持 Markdown 编辑和预览、草稿、发布、修改记录、回收站及 JSON 备份导出。发布时间采用北京时间。
+
+在线内容、草稿和认证信息保存在独立数据目录，默认本机路径为 `self-hosted/data/editor/`，服务器为 `/var/lib/ease2k-blog/editor/`。它们不会随代码重新部署而覆盖，也不会自动提交到 GitHub。请定期导出备份或备份服务器数据目录。
 
 ## 修改内容
 
@@ -64,11 +82,12 @@ npm run package
 npm run check
 npm test
 npm run test:ratings
+npm run test:owner
 ```
 
 `npm test` 需要先执行构建；测试公开接口、证书、私密内容隔离和只读限制。安装 Nginx 后，可用 `NGINX_BIN=/path/to/nginx npm run test:nginx` 检查反向代理脚本。
 
-本项目从文件读取公开内容，不需要数据库、登录服务或第三方托管配置。
+随包内容作为初始数据，在线修改使用 Node.js 内置 SQLite 持久化，不需要另装数据库服务或第三方托管配置。
 
 ## 平台账号
 

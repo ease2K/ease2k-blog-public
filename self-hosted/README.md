@@ -1,6 +1,6 @@
 # ease2k 博客：文件更新版
 
-网站只展示公开内容，支持搜索、主题切换、双语、竞赛奖项、教程和自动更新 Rating。页面不提供登录、在线编辑或私密查看，服务不提供认证和内容写入接口。
+网站只展示公开内容，支持搜索、主题切换、双语、竞赛奖项、教程和自动更新 Rating。公网入口保持只读；站主工作台通过 SSH 隧道提供密码登录、在线编辑和草稿管理。详见 [站主工作台说明](OWNER.md)。
 
 ## 修改内容
 
@@ -47,7 +47,7 @@ tar -xzf /root/ease2k-blog-linux.tar.gz -C "$blog_update_dir" &&
 bash "$blog_update_dir/ease2k-blog-linux/install.sh"
 ```
 
-安装脚本创建新 release、修正资源读取权限、切换 current 并重启服务。原 `/var/lib/ease2k-blog` 数据与旧 release 保留，不再从旧数据库读取或修改内容；更新既有公开日记请修改本地 JSON 文件。
+安装脚本创建新 release、修正资源读取权限、切换 current 并重启服务。原 `/var/lib/ease2k-blog` 数据与旧 release 保留。在线文章和凭据使用独立的 `/var/lib/ease2k-blog/editor/` 目录，后续更新不会覆盖；在线修改优先于随包初始数据。旧版数据库和旧认证文件不会自动导入。
 
 ## 访问和检查
 
@@ -62,7 +62,7 @@ journalctl -u ease2k-blog -n 30 --no-pager
 
 服务仅监听本机 3000，默认 BLOG_ORIGIN 为 http://localhost:3000，与当前 Nginx 转发 Host 一致。首次建立 IP 入口可运行包内 `bash configure-ip-preview.sh YOUR_SERVER_IP`，该脚本会检查与备份 Nginx 配置，失败时回退。域名入口使用源码中的 `bash self-hosted/deploy/configure-domain.sh example.com`，将 `example.com` 替换成自己的根域名。
 
-备案完成后配置域名解析和 HTTPS，调整 Nginx 的域名入口即可；无需恢复后台登录。中国内地服务器通过公网 IP 提供网站服务同样适用备案要求。
+备案完成后配置域名解析和 HTTPS，调整 Nginx 的域名入口即可；站主工作台当前仍通过 SSH 隧道访问。中国内地服务器通过公网 IP 提供网站服务同样适用备案要求。
 
 ## 竞赛与 Rating
 

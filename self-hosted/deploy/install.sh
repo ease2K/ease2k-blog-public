@@ -5,9 +5,10 @@ node -e 'const [major,minor]=process.versions.node.split(".").map(Number); if(ma
 package_dir=$(cd -- "$(dirname -- "$0")" && pwd)
 getent passwd easeblog >/dev/null || useradd --system --home-dir /var/lib/ease2k-blog --shell /usr/sbin/nologin easeblog
 install -d -m 700 -o easeblog -g easeblog /var/lib/ease2k-blog
+install -d -m 700 -o easeblog -g easeblog /var/lib/ease2k-blog/editor
 release_dir="/opt/ease2k-blog/releases/$(date +%Y%m%d%H%M%S)"
 install -d -m 755 "$release_dir"
-cp -R "$package_dir/client" "$package_dir/server.mjs" "$package_dir/content.mjs" "$package_dir/tutorials.json" "$package_dir/journal.json" "$package_dir/ratings.mjs" "$package_dir/ratings-snapshot.json" "$release_dir/"
+cp -R "$package_dir/client" "$package_dir/server.mjs" "$package_dir/owner-store.mjs" "$package_dir/owner-http.mjs" "$package_dir/setup-owner.mjs" "$package_dir/content.mjs" "$package_dir/tutorials.json" "$package_dir/journal.json" "$package_dir/ratings.mjs" "$package_dir/ratings-snapshot.json" "$release_dir/"
 chown -R root:root "$release_dir"
 # Release files contain code and public assets only; private data stays in /var/lib.
 find "$release_dir" -type d -exec chmod 755 {} +
@@ -24,6 +25,7 @@ Group=easeblog
 WorkingDirectory=/opt/ease2k-blog/current
 Environment=NODE_ENV=production
 Environment=PORT=3000
+Environment=BLOG_EDITOR_DIR=/var/lib/ease2k-blog/editor
 Environment=BLOG_ORIGIN=http://localhost:3000
 ExecStart=/usr/bin/node /opt/ease2k-blog/current/server.mjs
 Restart=on-failure
@@ -34,6 +36,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadOnlyPaths=/var/lib/ease2k-blog
+ReadWritePaths=/var/lib/ease2k-blog/editor
 [Install]
 WantedBy=multi-user.target
 UNIT
@@ -43,7 +46,7 @@ systemctl restart ease2k-blog
 for attempt in {1..15}; do
     if curl --fail --silent http://127.0.0.1:3000/healthz; then
         echo
-        echo '安装成功。服务仅监听服务器本机 127.0.0.1:3000，旧数据保留于 /var/lib/ease2k-blog，新版内容随部署包更新。'
+        echo '安装成功。服务仅监听服务器本机 127.0.0.1:3000，在线内容保存在 /var/lib/ease2k-blog/editor，更新部署包不会覆盖。'
         echo '本地预览：在自己的电脑建立 SSH 隧道 ssh -N -L 3000:127.0.0.1:3000 root@服务器公网IP，然后打开 http://localhost:3000'
         exit 0
     fi

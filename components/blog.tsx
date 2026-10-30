@@ -2,7 +2,7 @@ import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNod
 import { Home, BookOpen, Folder, Trophy, UserRound, Search, Sun, Moon, ArrowUpRight, ChevronRight, ArrowLeft, Clock3, CalendarDays, Globe2, X, Code2, Database, Braces, NotebookPen, Coffee, ArrowUp, GraduationCap, Pin } from "lucide-react";
 import Ratings from "@/components/ratings";
 import ArticleToc, { type Heading, type OutlineHandler } from "@/components/article-toc";
-import { entries as initialEntries, profiles, portals, authoredProblems, awards, orderedAwards, sections, inSection, type Entry } from "@/lib/content";
+import { profiles, portals, authoredProblems, awards, orderedAwards, sections, inSection, type Entry } from "@/lib/content";
 
 type Lang = "zh" | "en";
 type View = { entries: Entry[]; ready: boolean };
@@ -57,7 +57,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
     const [lang, setLang] = useState<Lang>("zh"), [theme, setTheme] = useState("light"), [path, setPath] = useState(initialPath);
     const [now, setNow] = useState<Date | null>(null), [preferencesReady, setPreferencesReady] = useState(false);
     const [loading, setLoading] = useState(true), [returnPath, setReturnPath] = useState("");
-    const [data, setData] = useState<View>({ entries: initialEntries, ready: true });
+    const [data, setData] = useState<View>({ entries: [], ready: false });
     const [search, setSearch] = useState(""), [tag, setTag] = useState("all"), [month, setMonth] = useState("all");
     const searchDialog = useRef<HTMLDialogElement>(null);
     const main = useRef<HTMLElement>(null), focusPage = useRef(false), requestId = useRef(0);
@@ -89,7 +89,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
             if (!value.ready) throw new Error();
             if (id === requestId.current) setData({ entries: value.entries.filter(e => e.visibility !== "private"), ready: true });
         } catch {
-            if (id === requestId.current) setData({ entries: initialEntries, ready: false });
+            if (id === requestId.current) setData(value => ({ ...value, ready: false }));
         } finally { if (id === requestId.current) setLoading(false); }
     }, []);
 

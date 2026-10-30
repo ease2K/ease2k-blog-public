@@ -30,7 +30,7 @@
   "include": [
     "components/**/*.tsx",
     "lib/**/*.ts",
-    "self-hosted/client.tsx"
+    "self-hosted/*.tsx"
   ],
   "exclude": [
     "node_modules",

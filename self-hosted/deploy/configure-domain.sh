@@ -29,6 +29,9 @@ server {
     server_tokens off;
     add_header X-Ease2k-Domain "1" always;
 
+    location ^~ /_owner { return 404; }
+    location ^~ /api/owner { return 404; }
+    location = /owner.html { return 404; }
     location = /signin { return 404; }
     location = /signout { return 404; }
     location / {

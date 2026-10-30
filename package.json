@@ -14,7 +14,9 @@
     "check": "tsc --noEmit",
     "test": "node self-hosted/test.mjs",
     "test:ratings": "node scripts/test-ratings.mjs",
-    "test:nginx": "node scripts/test-ip-preview.mjs"
+    "test:nginx": "node scripts/test-ip-preview.mjs",
+    "owner:setup": "node self-hosted/build/setup-owner.mjs",
+    "test:owner": "node self-hosted/test-owner.mjs"
   },
   "dependencies": {
     "katex": "^0.19.1",

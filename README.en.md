@@ -4,7 +4,7 @@
 
 Source code for a personal blog featuring public journal entries, technical articles, projects, programming contest awards and certificates, and Codeforces / AtCoder ratings and history charts. The interface supports Chinese and English, light and dark themes, article tables of contents, Markdown, and mathematical notation.
 
-Built with React, Vite, and Node.js. The public read-only server lives in `self-hosted/`. The website provides no sign-in, online editing, or private-content views.
+Built with React, Vite, and Node.js. Public visitors see published content. A separate password-protected owner workspace is available through an SSH tunnel.
 
 ## Local development
 
@@ -25,6 +25,24 @@ npm start
 ```
 
 Open http://localhost:3000. The server listens on the loopback interface; production deployments use Nginx as a reverse proxy. Use `PORT` and `BLOG_ORIGIN` to configure the listening port and the Host accepted by the server. These values must match the reverse proxy configuration.
+
+## Owner workspace
+
+The unlisted workspace is available at `/_owner`. It accepts loopback or SSH-tunnel connections only; requests through the public proxy receive a 404 response.
+
+To try it locally:
+
+```bash
+npm run build
+npm run owner:setup
+npm start
+```
+
+Set a password of at least 12 characters in the interactive terminal, then open http://localhost:3000/_owner. Password input is hidden and only a salted hash is stored. Never commit passwords or runtime credentials.
+
+See the [owner workspace guide (Chinese)](self-hosted/OWNER.md) for server setup and tunnel instructions. The workspace supports Markdown editing and previews, drafts, publishing, revision history, recoverable deletion, and JSON backup exports. Publication times use Beijing time.
+
+Online content and credentials are stored outside release directories: `self-hosted/data/editor/` locally and `/var/lib/ease2k-blog/editor/` on the server. Deployments preserve this data. Online edits are not automatically pushed to GitHub; export backups or back up the server data directory regularly.
 
 ## Edit content
 
@@ -64,11 +82,12 @@ Adding ignore rules does not remove files from earlier commits. Check both stage
 npm run check
 npm test
 npm run test:ratings
+npm run test:owner
 ```
 
 Build the project before running `npm test`. It checks public APIs, certificates, private-data isolation, and read-only restrictions. With Nginx installed, run `NGINX_BIN=/path/to/nginx npm run test:nginx` to check the reverse proxy script.
 
-Public content is read from files. No database, sign-in service, or third-party hosting configuration is required.
+Bundled files provide initial content. Online edits are persisted with Node.js’s built-in SQLite support; no separate database server or third-party hosting configuration is required.
 
 ## Profiles
 
