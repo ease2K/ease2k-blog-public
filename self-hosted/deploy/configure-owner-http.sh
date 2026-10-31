@@ -49,14 +49,27 @@ for attempt in {1..20}; do
 done
 [[ "$owner_ready" == 1 ]]
 systemctl reload nginx
-curl --fail --silent --show-error --max-time 10 -H "Host: $blog_ip" http://127.0.0.1/_owner >/dev/null
 node --input-type=module - "$blog_ip" <<'JS'
 import assert from 'node:assert/strict';
-const response = await fetch('http://127.0.0.1/api/owner/session', { headers: { Host: process.argv[2] } });
-assert.equal(response.status, 200);
-const state = await response.json(); assert(state.configured && !state.authenticated && !state.csrf);
-const entries = await fetch('http://127.0.0.1/api/owner/entries', { headers: { Host: process.argv[2] } });
-assert.equal(entries.status, 401);
+import { request } from 'node:http';
+const get = path => new Promise((resolve, reject) => {
+    const req = request('http://127.0.0.1' + path, { agent: false, headers: { Host: process.argv[2], Connection: 'close' } }, res => {
+        const chunks = []; res.on('data', chunk => chunks.push(chunk)); res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks).toString() }));
+    });
+    req.on('error', reject); req.setTimeout(3000, () => req.destroy(Error('HTTP probe timed out'))); req.end();
+});
+let ready = false;
+for (let attempt = 0; attempt < 20; attempt++) {
+    const response = await get('/api/owner/session');
+    if (response.status === 200) {
+        const state = JSON.parse(response.body);
+        if (state.configured && !state.authenticated && !state.csrf) { ready = true; break; }
+    }
+    await new Promise(resolve => setTimeout(resolve, 250));
+}
+assert(ready, 'Nginx owner API did not become ready');
+assert.equal((await get('/_owner')).status, 200);
+assert.equal((await get('/api/owner/entries')).status, 401);
 console.log('PASS: HTTP owner entry is online; private entries remain authenticated.');
 JS
 trap - ERR

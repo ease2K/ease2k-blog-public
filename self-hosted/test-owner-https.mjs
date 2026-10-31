@@ -67,7 +67,7 @@ try {
     for (let index = 0; ; index++) {
         try { assert.equal((await request('/_owner')).status, 200); break; } catch (error) { if (index >= 30 || nginx.exitCode !== null) throw error; await new Promise(resolve => setTimeout(resolve, 40)); }
     }
-    const page = await request('/'); assert.equal(page.status, 200); assert(page.text.includes('class="footer-owner" href="/_owner"'));
+    const page = await request('/'); assert.equal(page.status, 200); assert(page.text.includes('class="footer-owner" href="/_owner?from=footer"'));
     assert.equal((await request('/owner.html')).status, 404);
     assert.equal((await request('/api/owner/entries')).status, 401);
     const proxy = { 'X-Ease2k-Owner-Proxy': secret, 'X-Forwarded-Proto': insecure ? 'http' : 'https', 'X-Forwarded-Host': '127.0.0.1:' + port };
