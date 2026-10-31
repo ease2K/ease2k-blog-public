@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, rmSync, existsSync, mkdtempSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, rmSync, existsSync, mkdtempSync, realpathSync } from 'node:fs';
 import { resolve, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
@@ -61,7 +61,7 @@ export function createBackup(source, destination, keep = 14) {
     for (const name of old.slice(Math.max(1, keep))) rmSync(resolve(destination, name), { recursive: true });
     return { directory: target, verified: true, restorationTest: true, ...verified };
 }
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
     const [command, source, destination] = process.argv.slice(2);
     try {
         if (!source || !['create', 'verify', 'restore'].includes(command) || command !== 'verify' && !destination) throw Error('用法：node backup.mjs create 数据目录 备份目录 | verify 备份目录 | restore 备份目录 空目标目录');

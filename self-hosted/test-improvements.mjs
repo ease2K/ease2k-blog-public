@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, rm, readdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, rm, readdir, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -71,6 +71,14 @@ try {
     assert((await (await request('/robots.txt')).text()).includes('Disallow: /_owner'));
     assert.equal((await (await request('/api/search?q=原始公开正文')).json()).entries.some(value => value.id === entry.id), true);
     const backup = createBackup(data, backups, 2); assert.equal(backup.restorationTest, true); assert.equal(backup.entries, 2);
+    const link = resolve(directory, 'backup-current.mjs');
+    await symlink(resolve('self-hosted/build/backup.mjs'), link);
+    const command = spawn(process.execPath, [link, 'create', data, resolve(directory, 'cli-backups')], { stdio: ['ignore', 'pipe', 'pipe'] });
+    let commandOutput = '', commandErrors = '';
+    command.stdout.on('data', value => commandOutput += value); command.stderr.on('data', value => commandErrors += value);
+    const [commandCode] = await once(command, 'exit');
+    assert.equal(commandCode, 0, commandErrors);
+    assert.equal(JSON.parse(commandOutput).restorationTest, true, 'The backup CLI must execute when launched through a release symlink');
     const restored = resolve(directory, 'restored'); assert.deepEqual(restoreBackup(backup.directory, restored), verifyBackup(backup.directory));
     assert.throws(() => restoreBackup(backup.directory, restored), /空目录/);
     const mediaFile = resolve(backup.directory, 'media', media.url.split('/').at(-1));
