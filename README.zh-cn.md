@@ -15,7 +15,7 @@ npm ci
 npm run dev
 ```
 
-浏览器打开终端输出的本机地址（默认 http://127.0.0.1:5173）。开发服务支持页面组件和样式热更新，公开内容与 Rating API 由本机 Node.js 服务提供。修改 `lib/content.ts`、日常或教程数据后，重启开发服务。
+浏览器打开终端输出的本机地址（默认 http://127.0.0.1:5173） 。开发服务支持页面组件和样式热更新，公开内容与 Rating API 由本机 Node.js 服务提供。修改 `lib/content.ts`、日常或教程数据后，重启开发服务。
 
 ## 构建与运行
 
@@ -24,7 +24,7 @@ npm run build
 npm start
 ```
 
-启动后访问 http://localhost:3000。服务默认监听本机地址；部署时由 Nginx 转发。可通过 `PORT` 和 `BLOG_ORIGIN` 设置监听端口与服务接受的 Host，二者需与反向代理配置一致。
+启动后访问 http://localhost:3000 。服务默认监听本机地址；部署时由 Nginx 转发。可通过 `PORT` 和 `BLOG_ORIGIN` 设置监听端口与服务接受的 Host，二者需与反向代理配置一致。
 
 ## 站主在线编辑
 
