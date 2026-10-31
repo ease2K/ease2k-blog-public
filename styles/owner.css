@@ -6,8 +6,10 @@
 .owner-login-card > svg { color: var(--blue-text); margin-bottom: 24px; }
 .owner-login-card h1 { font-size: 30px; margin-bottom: 12px; }
 .owner-login-card p { line-height: 1.8; color: var(--muted); margin-bottom: 24px; }
-.owner-login label, .owner-editor label { display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 20px; }
-.owner-login input, .owner-shell input, .owner-shell textarea, .owner-shell select { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--text); padding: 12px; font: inherit; min-width: 0; }
+.owner-login label, .owner-editor label { min-width: 0; display: flex; flex-direction: column; gap: 8px; font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+.owner-login input, .owner-shell input, .owner-shell textarea, .owner-shell select { width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-soft); color: var(--text); padding: 12px; font: inherit; min-width: 0; display: block; }
+.owner-login input, .owner-shell input, .owner-shell select { height: 44px; line-height: 20px; padding-block: 11px; }
+.owner-shell input[readonly] { color: var(--muted); }
 .owner-shell input:focus, .owner-shell textarea:focus, .owner-shell select:focus, .owner-login input:focus { outline: 2px solid var(--blue-text); outline-offset: 2px; }
 .owner-shell textarea { resize: vertical; line-height: 1.7; }
 .owner-shell button, .owner-login button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 13px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: var(--surface); font-size: 12px; min-height: 40px; cursor: pointer; }
@@ -30,12 +32,12 @@
 .owner-entry strong { font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .owner-entry span { font-size: 10px; color: var(--subtle); }
 .owner-entry > .owner-restore { flex-direction: row; width: auto; padding: 8px 14px; color: var(--blue-text); }
-.owner-editor { min-width: 0; max-width: 1000px; }
+.owner-editor { min-width: 0; }
 .owner-editor-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 28px; }
 .owner-editor-heading p { color: var(--subtle); font-size: 11px; margin-bottom: 9px; }
 .owner-editor-heading h1 { font-size: 28px; line-height: 1.4; overflow-wrap: anywhere; }
 .owner-editor-heading button { flex-shrink: 0; }
-.owner-fields { display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr; gap: 14px; }
+.owner-fields { display: grid; grid-template-columns: 1fr 1.5fr 1fr 1fr; gap: 14px; align-items: end; }
 .owner-body-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .owner-body-heading label { margin-bottom: 0; }
 .owner-body { min-height: 440px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace !important; font-size: 13px !important; tab-size: 4; }

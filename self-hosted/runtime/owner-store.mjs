@@ -31,16 +31,28 @@ export function openStore(directory, bundled) {
             return value;
         } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
     }
+    function publishedAt(entry) {
+        if (!entry) return null;
+        if (Object.hasOwn(entry, 'publishedAt')) return entry.publishedAt;
+        if (entry.visibility !== 'private') return entry.date;
+        const bundled = initial.get(entry.id);
+        if (bundled && bundled.visibility !== 'private') return bundled.date;
+        const version = db.prepare("SELECT payload FROM history WHERE id=? AND json_extract(payload, '$.visibility')='public' ORDER BY revision LIMIT 1").get(entry.id);
+        return version ? JSON.parse(version.payload).date : null;
+    }
     function all() {
-        const values = new Map([...initial].map(([id, entry]) => [id, { ...entry, revision: 0 }]));
+        const values = new Map([...initial].map(([id, entry]) => [id, { ...entry, publishedAt: publishedAt(entry), revision: 0 }]));
         for (const row of db.prepare('SELECT * FROM entries').all()) {
             if (row.deleted) values.delete(row.id);
-            else values.set(row.id, { ...JSON.parse(row.payload), revision: row.revision, updatedAt: row.updated_at });
+            else {
+                const entry = JSON.parse(row.payload);
+                values.set(row.id, { ...entry, publishedAt: publishedAt(entry), revision: row.revision, updatedAt: row.updated_at });
+            }
         }
         return [...values.values()];
     }
     function publicEntries() {
-        return all().filter(entry => entry.visibility !== 'private').map(({ revision, updatedAt, ...entry }) => entry);
+        return all().filter(entry => entry.visibility !== 'private').map(({ revision, updatedAt, publishedAt, ...entry }) => entry);
     }
     function session(req) {
         const config = owner();
@@ -98,9 +110,10 @@ export function openStore(directory, bundled) {
             if (current !== revision || (create && old) || (restore ? !row?.deleted : (!create && (!old || row?.deleted)))) throw failure('文章已被其他窗口修改或删除，请重新加载后再保存。', 409);
             if (create && row?.deleted) throw failure('这个 ID 已用于删除过的文章，请换一个 ID。', 409);
             if (!old && !create) throw failure('文章不存在。', 404);
-            const entry = remove ? old : validate(payload);
-            if (entry.id !== id) throw failure('文章 ID 不可更改。');
             const now = new Date().toISOString(), next = current + 1;
+            const firstPublished = publishedAt(old) || (payload?.visibility === 'public' && !remove ? now : null);
+            const entry = remove ? old : { ...validate({ ...payload, date: firstPublished || old?.date || now }), publishedAt: firstPublished };
+            if (entry.id !== id) throw failure('文章 ID 不可更改。');
             if (old && !row) db.prepare('INSERT OR IGNORE INTO history VALUES (?,?,?,?,?)').run(id, 0, JSON.stringify(old), 0, now);
             const text = JSON.stringify(entry);
             db.prepare('INSERT OR REPLACE INTO entries VALUES (?,?,?,?,?)').run(id, text, next, Number(remove), now);
@@ -111,7 +124,7 @@ export function openStore(directory, bundled) {
         } catch (error) { db.exec('ROLLBACK'); throw error; }
     }
     return { db, owner, all, publicEntries, session, login, write,
-        trash: () => db.prepare('SELECT * FROM entries WHERE deleted=1').all().map(row => ({ ...JSON.parse(row.payload), revision: row.revision, updatedAt: row.updated_at })),
+        trash: () => db.prepare('SELECT * FROM entries WHERE deleted=1').all().map(row => { const entry = JSON.parse(row.payload); return { ...entry, publishedAt: publishedAt(entry), revision: row.revision, updatedAt: row.updated_at }; }),
         logout: session => db.prepare('DELETE FROM sessions WHERE hash=?').run(session.hash),
         history: id => db.prepare('SELECT revision, payload, deleted, saved_at FROM history WHERE id=? ORDER BY revision DESC').all(id).map(row => ({ entry: JSON.parse(row.payload), revision: row.revision, deleted: !!row.deleted, savedAt: row.saved_at })),
     };
