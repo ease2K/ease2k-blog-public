@@ -1,6 +1,6 @@
 # ease2k Personal Blog
 
-[简体中文](README.md) | **English**
+[简体中文](README.zh-cn.md) | **English**
 
 Source code for a personal blog featuring public journal entries, technical articles, projects, programming contest awards and certificates, and Codeforces / AtCoder ratings and history charts. The interface supports Chinese and English, light and dark themes, article tables of contents, Markdown, and mathematical notation.
 
