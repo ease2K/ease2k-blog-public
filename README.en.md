@@ -56,6 +56,8 @@ Online content and credentials are stored outside release directories: `self-hos
 | Styles | `styles/globals.css` |
 | Rating data and history fetching | `lib/ratings.mjs` |
 
+Technology topics include Java, MySQL, HTML, CSS, and JavaScript. Published articles are grouped by their tags; matching is case-insensitive, and JS is also recognized as JavaScript. Empty home-page sections stay hidden.
+
 Common tag labels follow the selected site language. Matching Chinese and English spellings share one filter and can be searched in either language. Technical names and custom tags outside the translation dictionary keep their original text.
 
 The owner workspace records the server time automatically on first publication and displays it to the minute in Beijing time (UTC+8). Saving a draft does not set its publication time. Later edits, unpublishing, and republishing preserve the original publication time.

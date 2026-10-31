@@ -6,8 +6,10 @@ const translations = new Map<string, string>([
     ["贪心", "Greedy"], ["排序", "Sorting"], ["语言基础", "Language basics"],
     ["数据库", "Databases"], ["前端", "Front end"], ["后端", "Back end"],
     ["站点说明", "Site notes"], ["个人网站", "Personal website"],
+    ["Java", "Java"], ["MySQL", "MySQL"], ["HTML", "HTML"], ["CSS", "CSS"], ["JavaScript", "JavaScript"],
 ]);
 const keys = new Map([...translations].flatMap(([zh, en]) => [[zh, zh], [en.toLowerCase(), zh]]));
+keys.set("js", "JavaScript");
 
 export function tagKey(value: string) {
     const text = value.trim();

@@ -119,13 +119,14 @@ export const entries: Entry[] = [
     {
         id: "personal-blog", kind: "project", title: "这个蓝色的个人站点", enTitle: "This little blue corner of the web",
         summary: "把日常、学习与项目放在一起，为持续记录留一个自己的地方。", enSummary: "A personal space for everyday notes, learning, and things I build.",
-        body: "这个站点围绕 eAs1nGG-_- / ease2k 的日常与技术记录设计。\n\n## 视觉与阅读\n\n主色来自 2026 红牛亮面蓝的网页适配方案。系统字体优先使用苹果设备原生字形，浅色与深色主题均可以独立切换。\n\n## 内容组织\n\n首页按日常、文章、项目、算法、Java、MySQL 排列，每部分最多展示三条，空分区隐藏。列表页显示该分类的全部有效内容。\n\n## 站外账号\n\n竞赛和关于我页面提供 Codeforces 与 AtCoder 入口，项目和关于我页面提供 GitHub 入口。",
-        enBody: "A personal site for eAs1nGG-_- / ease2k.\n\n## Design\n\nA glossy racing-blue palette, Apple system typography, and light and dark themes.\n\n## Content\n\nThe home page shows up to three entries per section and hides empty sections. Detail pages contain the full entry.",
+        body: "这个站点围绕 eAs1nGG-_- / ease2k 的日常与技术记录设计。\n\n## 视觉与阅读\n\n主色来自 2026 红牛亮面蓝的网页适配方案。系统字体优先使用苹果设备原生字形，浅色与深色主题均可以独立切换。\n\n## 内容组织\n\n首页按日常、文章、项目、算法、Java、MySQL、HTML、CSS、JavaScript 排列，每部分最多展示三条，空分区隐藏。列表页显示该分类的全部有效内容。\n\n## 站外账号\n\n竞赛和关于我页面提供 Codeforces 与 AtCoder 入口，项目和关于我页面提供 GitHub 入口。",
+        enBody: "A personal site for eAs1nGG-_- / ease2k.\n\n## Design\n\nA glossy racing-blue palette, Apple system typography, and light and dark themes.\n\n## Content\n\nSections include everyday notes, writing, projects, algorithms, Java, MySQL, HTML, CSS, and JavaScript. The home page shows up to three entries per section and hides empty sections. Detail pages contain the full entry.",
         date: "2026-10-27T09:00:00+08:00", tags: ["React", "TypeScript", "个人网站"], read: 2,
     },
 ];
 
-export const sections = ["daily", "articles", "projects", "algorithms", "java", "mysql"] as const;
+export const technologyTopics = ["Java", "MySQL", "HTML", "CSS", "JavaScript"] as const;
+export const sections = ["daily", "articles", "projects", "algorithms", "java", "mysql", "html", "css", "javascript"] as const;
 export type Section = typeof sections[number];
 export function inSection(entry: Entry, section: string) {
     if (section === "daily") return entry.kind === "daily";
@@ -133,8 +134,7 @@ export function inSection(entry: Entry, section: string) {
     if (section === "articles") return true;
     if (section === "competitions") return entry.section === "competitions";
     if (section === "algorithms") return entry.tags.includes("算法");
-    if (section === "java") return entry.tags.includes("Java");
-    if (section === "mysql") return entry.tags.includes("MySQL");
+    if (technologyTopics.some(topic => topic.toLowerCase() === section)) return entry.tags.some(value => value.trim().toLowerCase() === section || (section === "javascript" && value.trim().toLowerCase() === "js"));
     if (section === "cpp") return entry.tags.includes("C++");
     return false;
 }
