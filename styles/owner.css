@@ -116,3 +116,15 @@
     .owner-media-tools > span { margin-left: 0; }
 }
 .owner-shell input.sr-only { width: 1px; height: 1px; padding: 0; border: 0; min-width: 0; }
+.owner-translation summary { display: flex; align-items: center; gap: 8px; }
+.owner-translation-actions { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.owner-translation-actions label { width: 190px; margin: 0; }
+.owner-translation-actions button { height: 44px; }
+.owner-translation-preview { margin-top: 20px; border: 1px solid var(--line); border-radius: 12px; padding: 22px; background: var(--surface); }
+.owner-translation-preview h3 { font-size: 17px; margin-bottom: 10px; }
+.owner-translated-body { min-height: 280px; font: 13px/1.8 ui-monospace, SFMono-Regular, Menlo, monospace !important; }
+.owner-translation-confirm { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+@media (max-width: 540px) { .owner-translation-preview { padding: 16px; }.owner-translation-actions label { width: 100%; } }
+.owner-translation .translation-chevron { margin-left: auto; margin-right: 12px; transition: transform .15s; }
+.owner-translation[open] .translation-chevron { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .owner-translation .translation-chevron { transition: none; } }

@@ -19,7 +19,8 @@
     "test:owner": "node self-hosted/test-owner.mjs",
     "test:improvements": "node self-hosted/test-improvements.mjs",
     "test:learning": "node self-hosted/test-learning.mjs",
-    "test:publishing": "node self-hosted/test-publishing.mjs"
+    "test:publishing": "node self-hosted/test-publishing.mjs",
+    "test:translation": "node self-hosted/test-translation.mjs"
   },
   "dependencies": {
     "highlight.js": "^11.12.0",
@@ -30,7 +31,9 @@
     "react-markdown": "^10.1.0",
     "rehype-katex": "^7.0.1",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5"
   },
   "devDependencies": {
     "@types/node": "22.19.19",

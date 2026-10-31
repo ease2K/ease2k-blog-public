@@ -121,3 +121,8 @@ This repository showcases the implementation of the website. A project-wide open
 ## Search, series, media, and feeds
 
 Search includes matching snippets and in-article navigation. The owner workspace manages series metadata, covers, chapter order, and reusable images with reference protection and recoverable trash. `/subscribe` lists all-post, technical, and per-series RSS feeds. Daily server snapshots can be pulled to a separate Mac, verified and restore-tested, with failure, freshness, and disk-space checks. See the [backup guide](self-hosted/BACKUP.md).
+
+
+## On-device article translation
+
+The owner workspace supports Chinese–English translation using desktop Chrome’s built-in Translator API. Titles, summaries, and Markdown are previewed before application to a private editing draft. Code, mathematics, and link destinations are preserved. Language packs may need an initial download; no translation API key is required. Review translations before publication. See the [owner guide](self-hosted/OWNER.md).
