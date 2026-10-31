@@ -11,7 +11,7 @@ rmSync(resolve(here, 'build'), { recursive: true, force: true });
 await build({ configFile: resolve(here, 'vite.config.mjs') });
 await sharp(resolve(here, '../public/share-card.svg')).png().toFile(resolve(here, 'build/client/share-card.png'));
 await build({ configFile: false, publicDir: false, plugins: [], resolve: { alias: { '@': resolve(here, '..') } }, ssr: { noExternal: true }, build: { ssr: resolve(here, 'render.tsx'), outDir: resolve(here, 'build/ssr'), emptyOutDir: true, rolldownOptions: { output: { entryFileNames: 'render.mjs', chunkFileNames: 'assets/[name]-[hash].mjs' } } } });
-for (const name of ['server.mjs', 'owner-store.mjs', 'owner-http.mjs', 'setup-owner.mjs', 'media.mjs', 'public-pages.mjs', 'backup.mjs', 'backup-cli.mjs']) cpSync(resolve(here, 'runtime', name), resolve(here, 'build', name));
+for (const name of ['server.mjs', 'owner-store.mjs', 'owner-http.mjs', 'setup-owner.mjs', 'media.mjs', 'public-pages.mjs', 'backup.mjs', 'backup-cli.mjs', 'series-store.mjs', 'resources.mjs', 'feeds.mjs', 'offsite-export.mjs']) cpSync(resolve(here, 'runtime', name), resolve(here, 'build', name));
 for (const name of ['writing', 'tags', 'series']) writeFileSync(resolve(here, 'build/' + name + '.mjs'), ts.transpileModule(readFileSync(resolve(here, '../lib/' + name + '.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
 writeFileSync(resolve(here, 'build/content.mjs'), ts.transpileModule(readFileSync(resolve(here, '../lib/content.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
 cpSync(resolve(here, '../lib/ratings.mjs'), resolve(here, 'build/ratings.mjs'));
@@ -21,6 +21,7 @@ cpSync(resolve(here, '../lib/journal.json'), resolve(here, 'build/journal.json')
 const { entries } = await import(new URL('./build/content.mjs', import.meta.url).href + '?check=' + Date.now());
 if (entries.some(entry => entry.visibility === 'private')) throw new Error('静态内容包仅可包含公开内容。');
 cpSync(resolve(here, 'deploy/configure-ip-preview.sh'), resolve(here, 'build/configure-ip-preview.sh'));
+cpSync(resolve(here, 'deploy/install-backup-channel.sh'), resolve(here, 'build/install-backup-channel.sh'));
 cpSync(resolve(here, 'deploy/install.sh'), resolve(here, 'build/install.sh'));
 cpSync(resolve(here, 'README.md'), resolve(here, 'build/README.md'));
 cpSync(resolve(here, 'OWNER.md'), resolve(here, 'build/OWNER.md'));

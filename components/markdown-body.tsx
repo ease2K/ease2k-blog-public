@@ -18,7 +18,7 @@ function codeMetadata() {
     };
 }
 
-export default function MarkdownBody({ text, lang, onOutline, owner = false }: { text: string; lang: Lang; onOutline?: OutlineHandler; owner?: boolean }) {
+export default function MarkdownBody({ text, lang, onOutline, owner = false, searchQuery = "" }: { text: string; lang: Lang; onOutline?: OutlineHandler; owner?: boolean; searchQuery?: string }) {
     const content = useRef<HTMLDivElement>(null);
     const needsMath = /\$\$|(^|[^\\])\$(?=\S)[^\n]*[^\\]\$/.test(text);
     const [math, setMath] = useState<MathPlugins | null>(null), [mathFailed, setMathFailed] = useState(false);
@@ -63,7 +63,7 @@ export default function MarkdownBody({ text, lang, onOutline, owner = false }: {
             const child = Children.toArray(children)[0];
             if (!isValidElement<{ children?: ReactNode; className?: string; "data-code-meta"?: string }>(child)) return <pre>{children}</pre>;
             const language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "text";
-            return <CodeBlock code={String(child.props.children || "").replace(/\n$/, "")} language={language} meta={child.props["data-code-meta"] || ""} lang={lang} />;
+            return <CodeBlock searchQuery={searchQuery} code={String(child.props.children || "").replace(/\n$/, "")} language={language} meta={child.props["data-code-meta"] || ""} lang={lang} />;
         },
     }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math, owner]);
     return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" ref={content}>{markdown}</div></>;

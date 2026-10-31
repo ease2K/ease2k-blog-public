@@ -3,6 +3,8 @@ import journal from "./journal.json" with { type: "json" };
 import tutorials from "./tutorials.json" with { type: "json" };
 
 export type Entry = {
+    searchSnippet?: string;
+    searchLanguage?: "en";
     id: string;
     kind: "daily" | "article" | "project";
     title: string;

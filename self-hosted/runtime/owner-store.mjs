@@ -24,6 +24,8 @@ export function openStore(directory, bundled) {
         CREATE TABLE IF NOT EXISTS history (id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, deleted INTEGER NOT NULL, saved_at TEXT NOT NULL, PRIMARY KEY (id, revision));
         CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY, version TEXT NOT NULL, expires INTEGER NOT NULL);
         CREATE TABLE IF NOT EXISTS working_copies (id TEXT PRIMARY KEY, payload TEXT NOT NULL, base_revision INTEGER NOT NULL, creating INTEGER NOT NULL, revision INTEGER NOT NULL, saved_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS series (id TEXT PRIMARY KEY, payload TEXT NOT NULL, revision INTEGER NOT NULL, updated_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS media_assets (name TEXT PRIMARY KEY, label TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS attempts (version TEXT PRIMARY KEY, started INTEGER NOT NULL, count INTEGER NOT NULL);`);
     const initial = new Map(bundled.map(entry => [entry.id, entry]));
     function owner() {
@@ -51,7 +53,14 @@ export function openStore(directory, bundled) {
                 values.set(row.id, { ...entry, publishedAt: publishedAt(entry), revision: row.revision, updatedAt: row.updated_at });
             }
         }
-        return [...values.values()];
+        const catalog = new Map(db.prepare('SELECT id,payload FROM series').all().map(row => [row.id, JSON.parse(row.payload)]));
+        return [...values.values()].map(entry => {
+            const metadata = entry.series && catalog.get(entry.series.id);
+            if (!metadata) return entry;
+            const { chapterOrder, ...info } = metadata;
+            const index = chapterOrder?.indexOf(entry.id) ?? -1;
+            return { ...entry, series: { ...info, order: index >= 0 ? index + 1 : entry.series.order } };
+        });
     }
     function publicEntries() {
         return all().filter(entry => entry.visibility !== 'private').map(({ revision, updatedAt, publishedAt, ...entry }) => entry);
@@ -120,11 +129,12 @@ export function openStore(directory, bundled) {
                 entry.playground[key] = playground[key] || '';
             }
         }
+        for (const match of JSON.stringify(entry).matchAll(/\/media\/([a-f0-9-]{36}\.webp)/g)) if (db.prepare('SELECT deleted FROM media_assets WHERE name=?').get(match[1])?.deleted) throw failure('图片已在回收区，请先恢复。');
         return { ...entry, kind: value.kind, visibility: value.visibility, tags: [...new Set(value.tags)], read: value.read, ...(value.section ? { section: value.section } : {}) };
     }
-    function write(id, payload, revision, remove = false, create = false, restore = false) {
+    function write(id, payload, revision, remove = false, create = false, restore = false, externalTransaction = false) {
         if (!Number.isInteger(revision) || revision < 0) throw failure('版本号不正确。');
-        db.exec('BEGIN IMMEDIATE');
+        if (!externalTransaction) db.exec('BEGIN IMMEDIATE');
         try {
             const row = db.prepare('SELECT * FROM entries WHERE id=?').get(id);
             const old = row ? JSON.parse(row.payload) : initial.get(id);
@@ -135,16 +145,32 @@ export function openStore(directory, bundled) {
             const now = new Date().toISOString(), next = current + 1;
             const firstPublished = publishedAt(old) || (payload?.visibility === 'public' && !remove ? now : null);
             const entry = remove ? old : { ...validate({ ...payload, summary: payload?.summary?.trim() && !['-', '—'].includes(payload.summary.trim()) ? payload.summary : excerpt(payload?.body || ''), enSummary: payload?.enSummary?.trim() || excerpt(payload?.enBody || ''), read: readingMinutes(payload?.body || ''), date: firstPublished || old?.date || now }), publishedAt: firstPublished };
+            if (externalTransaction && !remove) { entry.summary = old.summary; entry.enSummary = old.enSummary; entry.read = old.read; }
             if (entry.id !== id) throw failure('文章 ID 不可更改。');
+            if (!remove && entry.series) {
+                const row = db.prepare('SELECT payload FROM series WHERE id=?').get(entry.series.id);
+                if (!row) {
+                    const { order, ...info } = entry.series;
+                    db.prepare('INSERT INTO series VALUES (?,?,1,?)').run(info.id, JSON.stringify({ ...info, chapterOrder: [entry.id] }), now);
+                } else {
+                    const metadata = JSON.parse(row.payload);
+                    const before = all().find(value => value.id === entry.id)?.series;
+                    if (!metadata.chapterOrder.includes(entry.id) || before?.order !== entry.series.order) {
+                        metadata.chapterOrder = metadata.chapterOrder.filter(id => id !== entry.id);
+                        metadata.chapterOrder.splice(Math.min(entry.series.order - 1, metadata.chapterOrder.length), 0, entry.id);
+                        db.prepare('UPDATE series SET payload=?,revision=revision+1,updated_at=? WHERE id=?').run(JSON.stringify(metadata), now, entry.series.id);
+                    }
+                }
+            }
             if (old && !row) db.prepare('INSERT OR IGNORE INTO history VALUES (?,?,?,?,?)').run(id, 0, JSON.stringify(old), 0, now);
             const text = JSON.stringify(entry);
             db.prepare('INSERT OR REPLACE INTO entries VALUES (?,?,?,?,?)').run(id, text, next, Number(remove), now);
             db.prepare('INSERT INTO history VALUES (?,?,?,?,?)').run(id, next, text, Number(remove), now);
             db.prepare('DELETE FROM history WHERE id=? AND revision<?').run(id, next - 29);
             db.prepare('DELETE FROM working_copies WHERE id=?').run(id);
-            db.exec('COMMIT');
-            return { ...entry, revision: next, updatedAt: now };
-        } catch (error) { db.exec('ROLLBACK'); throw error; }
+            if (!externalTransaction) db.exec('COMMIT');
+            return remove ? { ...entry, revision: next, updatedAt: now } : all().find(value => value.id === id);
+        } catch (error) { if (!externalTransaction) db.exec('ROLLBACK'); throw error; }
     }
     function drafts() {
         return db.prepare('SELECT * FROM working_copies ORDER BY saved_at DESC').all().map(row => ({ entry: JSON.parse(row.payload), baseRevision: row.base_revision, creating: !!row.creating, revision: row.revision, savedAt: row.saved_at }));

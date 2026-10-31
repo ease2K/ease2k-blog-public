@@ -48,3 +48,25 @@ BLOG_PUBLIC_ORIGIN=https://YOUR_DOMAIN bash install.sh
 ```
 
 后续安装默认保留原有公开网址。站点内部的 `BLOG_ORIGIN` 与公开网址不同：前者保持与本机监听和反向代理 Host 一致。不要从不受信任的转发请求头推断 canonical 地址。站主入口始终通过本机或 SSH 隧道访问。
+
+
+## Mac 异地副本与失败提醒
+
+服务器每日 04:15（北京时间，最多延后 15 分钟）生成备份，本机拉取程序 `node self-hosted/pull-backup.mjs` 将经过校验的最新快照保存到 Mac 的 `~/Library/Application Support/ease2k-blog-backups/`，保留最近 30 份。目录权限 0700，文件权限 0600；此目录位于 Git 仓库外。备份含站主加盐密码哈希与会话密钥，应作为私有数据保存。它不是公开源码的一部分。
+
+首次配置使用独立 Ed25519 密钥。通过已授权的管理员连接，将该密钥的**公钥**从标准输入交给服务器的 `install-backup-channel.sh`。安装器写入带 `restrict` 和强制命令的授权记录；专用密钥只能请求 `status`、`latest`（可指定现有快照编号），不能获得 Shell、SFTP、终端或端口转发。私钥留在 Mac，管理员原有登录密钥不变。停用时从服务器 `authorized_keys` 删除对应的 `ease2k-backup-read-only` 记录。
+
+Mac 目录中的 `config.json` 格式：
+
+```json
+{
+    "target": "root@your-server",
+    "identity": "/absolute/path/to/backup-only-key"
+}
+```
+
+拉取前检查服务器定时器、最近备份结果、36 小时内的新鲜度，以及两端剩余磁盘空间。服务器至少保留 1 GiB 或预计快照两倍的可用空间；Mac 至少保留 1 GiB 或快照三倍的空间。下载采用 SSH 主机密钥校验；解压前检查文件路径和类型，再校验 SHA-256、SQLite 完整性并实际恢复到临时目录。成功后才轮换旧副本。
+
+`state.json` 保存最近检查结果和失败/恢复状态，不含私钥或站主凭据。配合 Codex 定时任务执行拉取，并仅在新失败、恢复或需要用户操作时提醒；相同故障不重复提醒。Mac 和 Codex 需要运行且能联网，关机期间无法执行本机拉取或即时提醒。服务器定时备份独立运行，不依赖 Mac 在线。
+
+图片内容保持不变，回收区状态保存在 SQLite，因此快照同时保留回收区图片、专栏、资源名称与历史引用。恢复完整快照后，这些功能一起恢复。

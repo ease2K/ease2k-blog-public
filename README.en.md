@@ -116,3 +116,8 @@ Bundled files provide initial content. Online edits are persisted with Node.jsâ€
 ## Source code and content usage
 
 This repository showcases the implementation of the website. A project-wide open-source license has not been selected. See the [usage notice (Chinese)](USAGE.md) for viewing, forking, and other uses. Original articles, journal entries, certificate images, and third-party materials retain their respective rights. Publishing the source code does not grant blanket permission to republish those materials or change their attribution.
+
+
+## Search, series, media, and feeds
+
+Search includes matching snippets and in-article navigation. The owner workspace manages series metadata, covers, chapter order, and reusable images with reference protection and recoverable trash. `/subscribe` lists all-post, technical, and per-series RSS feeds. Daily server snapshots can be pulled to a separate Mac, verified and restore-tested, with failure, freshness, and disk-space checks. See the [backup guide](self-hosted/BACKUP.md).

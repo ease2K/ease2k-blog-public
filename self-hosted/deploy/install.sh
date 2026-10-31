@@ -8,7 +8,7 @@ install -d -m 700 -o easeblog -g easeblog /var/lib/ease2k-blog
 install -d -m 700 -o easeblog -g easeblog /var/lib/ease2k-blog/editor
 release_dir="/opt/ease2k-blog/releases/$(date +%Y%m%d%H%M%S)"
 install -d -m 755 "$release_dir"
-cp -R "$package_dir/client" "$package_dir/server.mjs" "$package_dir/owner-store.mjs" "$package_dir/owner-http.mjs" "$package_dir/setup-owner.mjs" "$package_dir/media.mjs" "$package_dir/public-pages.mjs" "$package_dir/backup.mjs" "$package_dir/backup-cli.mjs" "$package_dir/writing.mjs" "$package_dir/tags.mjs" "$package_dir/series.mjs" "$package_dir/ssr" "$package_dir/content.mjs" "$package_dir/tutorials.json" "$package_dir/journal.json" "$package_dir/ratings.mjs" "$package_dir/ratings-snapshot.json" "$release_dir/"
+cp -R "$package_dir/client" "$package_dir/server.mjs" "$package_dir/owner-store.mjs" "$package_dir/owner-http.mjs" "$package_dir/setup-owner.mjs" "$package_dir/media.mjs" "$package_dir/public-pages.mjs" "$package_dir/backup.mjs" "$package_dir/backup-cli.mjs" "$package_dir/series-store.mjs" "$package_dir/resources.mjs" "$package_dir/feeds.mjs" "$package_dir/offsite-export.mjs" "$package_dir/install-backup-channel.sh" "$package_dir/writing.mjs" "$package_dir/tags.mjs" "$package_dir/series.mjs" "$package_dir/ssr" "$package_dir/content.mjs" "$package_dir/tutorials.json" "$package_dir/journal.json" "$package_dir/ratings.mjs" "$package_dir/ratings-snapshot.json" "$release_dir/"
 chown -R root:root "$release_dir"
 # Release files contain code and public assets only; private data stays in /var/lib.
 find "$release_dir" -type d -exec chmod 755 {} +

@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, rmSync, existsSync, mkdtempSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, rmSync, existsSync, mkdtempSync, statfsSync } from 'node:fs';
 import { resolve, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
@@ -43,6 +43,9 @@ export function restoreBackup(directory, destination) {
 }
 export function createBackup(source, destination, keep = 14) {
     mkdirSync(destination, { recursive: true, mode: 0o700 }); chmodSync(destination, 0o700);
+    const disk = statfsSync(destination), available = Number(disk.bavail) * Number(disk.bsize);
+    const size = files(source).reduce((sum, name) => sum + statSync(resolve(source, name)).size, 0);
+    if (available < Math.max(Number(process.env.BLOG_BACKUP_MIN_FREE_BYTES || 1024 ** 3), size * 2)) throw Error('备份空间不足，请清理备份磁盘后重试。');
     const name = new Date().toISOString().replace(/[:.]/g, '-') + '-' + randomUUID().slice(0, 8);
     const target = resolve(destination, name);
     mkdirSync(target, { mode: 0o700 });

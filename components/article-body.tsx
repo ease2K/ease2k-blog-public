@@ -1,7 +1,7 @@
 import { Component, lazy, Suspense, useEffect } from "react";
 import type { OutlineHandler } from "@/components/article-toc";
 
-type Props = { text: string; lang: "zh" | "en"; onOutline?: OutlineHandler; owner?: boolean };
+type Props = { text: string; lang: "zh" | "en"; onOutline?: OutlineHandler; owner?: boolean; searchQuery?: string };
 let pending: ReturnType<typeof importMarkdown> | undefined;
 function importMarkdown() { return import("@/components/markdown-body"); }
 function loadMarkdown() {

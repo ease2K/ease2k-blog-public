@@ -1,5 +1,5 @@
 import type { Entry } from "./content";
-export type SeriesInfo = { id: string; title: string; enTitle?: string; description?: string; enDescription?: string; order: number };
+export type SeriesInfo = { id: string; title: string; enTitle?: string; description?: string; enDescription?: string; order: number; cover?: string };
 export function seriesCatalog(entries: Entry[], includePrivate = false) {
     const groups = new Map<string, Entry[]>();
     for (const entry of entries) {

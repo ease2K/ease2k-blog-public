@@ -1,11 +1,11 @@
-import { mkdirSync, writeFileSync, createReadStream, statSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, createReadStream, statSync, existsSync, renameSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { failure } from './owner-store.mjs';
 
 const fileName = /^[a-f0-9-]{36}\.webp$/;
-export function dimensions(bytes) {
-    if (bytes.length < 30 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WEBP' || bytes.readUInt32LE(4) + 8 !== bytes.length) throw failure('图片需要先转换成 WebP 格式。');
+export function dimensions(bytes, totalLength = bytes.length) {
+    if (bytes.length < 30 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WEBP' || bytes.readUInt32LE(4) + 8 !== totalLength) throw failure('图片需要先转换成 WebP 格式。');
     const type = bytes.toString('ascii', 12, 16);
     let width, height;
     if (type === 'VP8 ' && bytes[23] === 0x9d && bytes[24] === 1 && bytes[25] === 0x2a) { width = bytes.readUInt16LE(26) & 16383; height = bytes.readUInt16LE(28) & 16383; }
@@ -21,7 +21,9 @@ export async function upload(req, directory) {
     const bytes = Buffer.concat(chunks), image = dimensions(bytes), name = randomUUID() + '.webp';
     const folder = resolve(directory, 'media');
     mkdirSync(folder, { recursive: true, mode: 0o700 });
-    writeFileSync(resolve(folder, name), bytes, { flag: 'wx', mode: 0o600 });
+    const temporary = resolve(directory, '.upload-' + name);
+    try { writeFileSync(temporary, bytes, { flag: 'wx', mode: 0o600 }); renameSync(temporary, resolve(folder, name)); }
+    finally { rmSync(temporary, { force: true }); }
     return { url: '/media/' + name, ...image, bytes: size };
 }
 export function serveMedia(req, res, name, directory, privatePreview = true) {

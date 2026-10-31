@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { copyText } from "@/lib/clipboard";
 import { emphasisLines, highlightLines } from "@/lib/highlight";
-export default function CodeBlock({ code, language, meta = "", lang }: { code: string; language: string; meta?: string; lang: "zh" | "en" }) {
+export default function CodeBlock({ code, language, meta = "", lang, searchQuery = "" }: { code: string; language: string; meta?: string; searchQuery?: string; lang: "zh" | "en" }) {
     const [copied, setCopied] = useState(false), [failed, setFailed] = useState(false), [numbers, setNumbers] = useState(false), [expanded, setExpanded] = useState(false);
     const [highlighted, setHighlighted] = useState<string[] | null>(null);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null), lines = code.split("\n"), emphasis = emphasisLines(meta, lines.length);
     const folded = lines.length > 24 && !expanded, visible = folded ? lines.slice(0, 12) : lines;
     const t = (zh: string, en: string) => lang === "zh" ? zh : en;
+    useEffect(() => { if (searchQuery && code.toLowerCase().includes(searchQuery.toLowerCase())) setExpanded(true); }, [searchQuery, code]);
     useEffect(() => {
         let active = true; setHighlighted(null);
         highlightLines(code, language).then(value => { if (active) setHighlighted(value); }).catch(() => {});
