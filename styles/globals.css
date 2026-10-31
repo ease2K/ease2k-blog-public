@@ -426,3 +426,16 @@ dialog { background: var(--surface); color: var(--text); border: 1px solid var(-
 @media (max-width: 540px) { .rating-history { padding: 17px 13px 14px; }.rating-history-heading { align-items: flex-start; flex-direction: column; gap: 12px; }.rating-history-chart { margin-top: 10px; }.rating-contest-select { flex-direction: column; align-items: stretch; gap: 6px; }.rating-history-tabs button { min-height: 36px; padding-inline: 13px; }.rating-history-chart text { font-size: 13px; } }
 
 .body-retry { margin-left: 12px; color: var(--blue-text); text-decoration: underline; cursor: pointer; }
+
+.topic-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+.topic-link { display: inline-flex; align-items: center; gap: 8px; padding: 7px 11px; border: 1px solid var(--line); border-radius: 9px; font-size: 12px; color: var(--muted); background: var(--surface); }
+.topic-link small { color: var(--subtle); font-variant-numeric: tabular-nums; }
+.topic-link.active { color: var(--blue-text); border-color: var(--blue-text); }
+.article-neighbours { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+.article-neighbour { min-width: 0; border: 1px solid var(--line); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 8px; overflow-wrap: anywhere; }
+.article-neighbour small { color: var(--muted); font-size: 11px; }.article-neighbour strong { font-size: 14px; font-weight: 550; }
+.neighbour-1 { text-align: right; }
+.related-entries { border-top: 1px solid var(--line); margin-top: 28px; padding-top: 24px; }.related-entries h2 { font-size: 18px; margin-bottom: 12px; }
+.related-link { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; color: var(--blue-text); font-size: 14px; overflow-wrap: anywhere; }
+.prose img { display: block; max-width: 100%; height: auto; border-radius: 10px; margin-block: 20px; }
+@media (max-width: 540px) { .article-neighbours { grid-template-columns: 1fr; }.article-neighbours > span { display: none; }.neighbour-1 { text-align: left; }.topic-link { min-height: 40px; } }

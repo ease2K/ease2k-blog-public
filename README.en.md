@@ -44,6 +44,12 @@ See the [owner workspace guide (Chinese)](self-hosted/OWNER.md) for server setup
 
 Online content and credentials are stored outside release directories: `self-hosted/data/editor/` locally and `/var/lib/ease2k-blog/editor/` on the server. Deployments preserve this data. Online edits are not automatically pushed to GitHub; export backups or back up the server data directory regularly.
 
+## Reading and publishing
+
+Lists use a lightweight index; article bodies load separately, and full-text search runs against published content on the server. Public pages include rendered HTML, per-article descriptions, sharing cards, structured data, a sitemap, and meaningful 404 responses. Drafts and owner APIs stay excluded.
+
+The owner workspace provides private autosaved editing copies, browser recovery, image upload/paste/drop, generated excerpts, and estimated reading time. Changes go public only when explicitly published. Installation sets up daily backups of SQLite, authentication configuration, and images, with checksum and restoration checks. See the [owner guide](self-hosted/OWNER.md) and [backup and restore guide](self-hosted/BACKUP.md).
+
 ## Edit content
 
 | Content | File or directory |
@@ -89,6 +95,7 @@ npm run check
 npm test
 npm run test:ratings
 npm run test:owner
+npm run test:improvements
 ```
 
 Build the project before running `npm test`. It checks public APIs, certificates, private-data isolation, and read-only restrictions. With Nginx installed, run `NGINX_BIN=/path/to/nginx npm run test:nginx` to check the reverse proxy script.

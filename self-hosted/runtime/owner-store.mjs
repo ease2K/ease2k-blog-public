@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { randomBytes, createHash, createHmac, timingSafeEqual, scrypt as scryptCallback } from 'node:crypto';
 import { promisify } from 'node:util';
+import { excerpt, readingMinutes } from './writing.mjs';
 
 const scrypt = promisify(scryptCallback);
 export const digest = value => createHash('sha256').update(value).digest('hex');
@@ -22,6 +23,7 @@ export function openStore(directory, bundled) {
         CREATE TABLE IF NOT EXISTS entries (id TEXT PRIMARY KEY, payload TEXT NOT NULL, revision INTEGER NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, updated_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS history (id TEXT NOT NULL, revision INTEGER NOT NULL, payload TEXT NOT NULL, deleted INTEGER NOT NULL, saved_at TEXT NOT NULL, PRIMARY KEY (id, revision));
         CREATE TABLE IF NOT EXISTS sessions (hash TEXT PRIMARY KEY, version TEXT NOT NULL, expires INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS working_copies (id TEXT PRIMARY KEY, payload TEXT NOT NULL, base_revision INTEGER NOT NULL, creating INTEGER NOT NULL, revision INTEGER NOT NULL, saved_at TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS attempts (version TEXT PRIMARY KEY, started INTEGER NOT NULL, count INTEGER NOT NULL);`);
     const initial = new Map(bundled.map(entry => [entry.id, entry]));
     function owner() {
@@ -112,18 +114,43 @@ export function openStore(directory, bundled) {
             if (!old && !create) throw failure('文章不存在。', 404);
             const now = new Date().toISOString(), next = current + 1;
             const firstPublished = publishedAt(old) || (payload?.visibility === 'public' && !remove ? now : null);
-            const entry = remove ? old : { ...validate({ ...payload, date: firstPublished || old?.date || now }), publishedAt: firstPublished };
+            const entry = remove ? old : { ...validate({ ...payload, summary: payload?.summary?.trim() && !['-', '—'].includes(payload.summary.trim()) ? payload.summary : excerpt(payload?.body || ''), enSummary: payload?.enSummary?.trim() || excerpt(payload?.enBody || ''), read: readingMinutes(payload?.body || ''), date: firstPublished || old?.date || now }), publishedAt: firstPublished };
             if (entry.id !== id) throw failure('文章 ID 不可更改。');
             if (old && !row) db.prepare('INSERT OR IGNORE INTO history VALUES (?,?,?,?,?)').run(id, 0, JSON.stringify(old), 0, now);
             const text = JSON.stringify(entry);
             db.prepare('INSERT OR REPLACE INTO entries VALUES (?,?,?,?,?)').run(id, text, next, Number(remove), now);
             db.prepare('INSERT INTO history VALUES (?,?,?,?,?)').run(id, next, text, Number(remove), now);
             db.prepare('DELETE FROM history WHERE id=? AND revision<?').run(id, next - 29);
+            db.prepare('DELETE FROM working_copies WHERE id=?').run(id);
             db.exec('COMMIT');
             return { ...entry, revision: next, updatedAt: now };
         } catch (error) { db.exec('ROLLBACK'); throw error; }
     }
-    return { db, owner, all, publicEntries, session, login, write,
+    function drafts() {
+        return db.prepare('SELECT * FROM working_copies ORDER BY saved_at DESC').all().map(row => ({ entry: JSON.parse(row.payload), baseRevision: row.base_revision, creating: !!row.creating, revision: row.revision, savedAt: row.saved_at }));
+    }
+    function saveDraft(id, value) {
+        if (!value || !Number.isInteger(value.baseRevision) || !Number.isInteger(value.revision) || value.revision < 0) throw failure('草稿版本号不正确。');
+        const source = value.entry;
+        const entry = validate({ ...source, title: source?.title || '未命名文章', date: new Date().toISOString(), read: readingMinutes(source?.body || ''), visibility: 'private' });
+        if (entry.id !== id) throw failure('草稿 ID 不正确。');
+        entry.title = source.title || '';
+        db.exec('BEGIN IMMEDIATE');
+        try {
+            const old = db.prepare('SELECT * FROM entries WHERE id=?').get(id), bundled = initial.get(id);
+            const current = old?.revision || 0;
+            if (old?.deleted || current !== value.baseRevision || (value.creating ? old || bundled : !old && !bundled)) throw failure('原文章已更新，请重新载入后再保存编辑草稿。', 409);
+            const previous = db.prepare('SELECT revision FROM working_copies WHERE id=?').get(id);
+            if ((previous?.revision || 0) !== value.revision) throw failure('编辑草稿已在其他窗口更新，请重新加载。', 409);
+            const now = new Date().toISOString(), revision = value.revision + 1;
+            entry.visibility = (old ? JSON.parse(old.payload) : bundled)?.visibility === 'private' || value.creating ? 'private' : 'public';
+            entry.date = (old ? JSON.parse(old.payload) : bundled)?.date || now;
+            db.prepare('INSERT OR REPLACE INTO working_copies VALUES (?,?,?,?,?,?)').run(id, JSON.stringify(entry), current, Number(!!value.creating), revision, now);
+            db.exec('COMMIT');
+            return { entry, baseRevision: current, creating: !!value.creating, revision, savedAt: now };
+        } catch (error) { db.exec('ROLLBACK'); throw error; }
+    }
+    return { db, owner, all, publicEntries, session, login, write, drafts, saveDraft,
         trash: () => db.prepare('SELECT * FROM entries WHERE deleted=1').all().map(row => { const entry = JSON.parse(row.payload); return { ...entry, publishedAt: publishedAt(entry), revision: row.revision, updatedAt: row.updated_at }; }),
         logout: session => db.prepare('DELETE FROM sessions WHERE hash=?').run(session.hash),
         history: id => db.prepare('SELECT revision, payload, deleted, saved_at FROM history WHERE id=? ORDER BY revision DESC').all(id).map(row => ({ entry: JSON.parse(row.payload), revision: row.revision, deleted: !!row.deleted, savedAt: row.saved_at })),

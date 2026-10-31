@@ -16,7 +16,8 @@
     "test:ratings": "node scripts/test-ratings.mjs",
     "test:nginx": "node scripts/test-ip-preview.mjs",
     "owner:setup": "node self-hosted/build/setup-owner.mjs",
-    "test:owner": "node self-hosted/test-owner.mjs"
+    "test:owner": "node self-hosted/test-owner.mjs",
+    "test:improvements": "node self-hosted/test-improvements.mjs"
   },
   "dependencies": {
     "katex": "^0.19.1",

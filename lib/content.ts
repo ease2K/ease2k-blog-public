@@ -14,6 +14,7 @@ export type Entry = {
     tags: string[];
     read: number;
     sample?: boolean;
+    hasBody?: boolean;
     visibility?: "public" | "private";
     section?: "competitions";
 };

@@ -19,7 +19,7 @@ function CodeBlock({ code, language, lang }: { code: string; language: string; l
     }}>{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? (lang === "zh" ? "已复制" : "Copied") : (lang === "zh" ? "复制" : "Copy")}</button></div>{failed && <p className="copy-feedback" role="status">{lang === "zh" ? "复制未成功，请选中代码手动复制。" : "Copy failed. Select the code and copy it manually."}</p>}<pre tabIndex={0} aria-label={lang === "zh" ? "代码" : "Code"}><code>{code}</code></pre></div>;
 }
 
-export default function MarkdownBody({ text, lang, onOutline }: { text: string; lang: Lang; onOutline?: OutlineHandler }) {
+export default function MarkdownBody({ text, lang, onOutline, owner = false }: { text: string; lang: Lang; onOutline?: OutlineHandler; owner?: boolean }) {
     const content = useRef<HTMLDivElement>(null);
     const needsMath = /\$\$|(^|[^\\])\$(?=\S)[^\n]*[^\\]\$/.test(text);
     const [math, setMath] = useState<MathPlugins | null>(null), [mathFailed, setMathFailed] = useState(false);
@@ -56,6 +56,7 @@ export default function MarkdownBody({ text, lang, onOutline }: { text: string; 
         return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); };
     }, [text, lang, onOutline, math]);
     const markdown = useMemo(() => <Markdown skipHtml remarkPlugins={needsMath && math ? [remarkGfm, math.remarkMath] : [remarkGfm]} rehypePlugins={needsMath && math ? [[math.rehypeKatex, { trust: false, strict: "ignore" }]] : []} components={{
+        img: ({ src, alt }) => <img src={owner && src?.startsWith("/media/") ? "/api/owner" + src : src} alt={alt || ""} loading="lazy" decoding="async" />,
         h1: ({ children }) => <h2>{children}</h2>,
         a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
         table: ({ children }) => <div className="prose-table" role="region" aria-label={lang === "zh" ? "操作与用法表格" : "Reference table"} tabIndex={0}><table>{children}</table></div>,
@@ -65,6 +66,6 @@ export default function MarkdownBody({ text, lang, onOutline }: { text: string; 
             const language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "text";
             return <CodeBlock code={String(child.props.children || "").replace(/\n$/, "")} language={language} lang={lang} />;
         },
-    }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math]);
+    }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math, owner]);
     return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" ref={content}>{markdown}</div></>;
 }

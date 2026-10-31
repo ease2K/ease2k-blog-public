@@ -39,7 +39,7 @@ try {
             host: '127.0.0.1',
             port: Number(process.env.VITE_PORT || 5173),
             strictPort: true,
-            proxy: { '/api': { target: origin, changeOrigin: true } },
+            proxy: { '/api': { target: origin, changeOrigin: true }, '/media': { target: origin, changeOrigin: true } },
             watch: { usePolling: process.env.CODEX_SANDBOX === 'seatbelt' },
         },
     });

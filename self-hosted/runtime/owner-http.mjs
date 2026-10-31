@@ -1,5 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { resolve } from 'node:path';
+import { upload, serveMedia } from './media.mjs';
 import { equal, failure } from './owner-store.mjs';
 
 async function body(req) {
@@ -21,7 +22,7 @@ export function ownerRequest(req) {
         && !['forwarded', 'x-forwarded-for', 'x-real-ip', 'x-forwarded-host', 'x-forwarded-proto'].some(name => req.headers[name]);
 }
 const cookie = (token, age = 8 * 60 * 60) => `ease_owner=${token}; HttpOnly; SameSite=Strict; Path=/api/owner; Max-Age=${age}`;
-export async function handleOwner(req, res, pathname, store, root, json) {
+export async function handleOwner(req, res, pathname, store, root, json, directory) {
     const portal = pathname === '/_owner' || pathname.startsWith('/_owner/');
     const api = pathname === '/api/owner' || pathname.startsWith('/api/owner/');
     if (!portal && !api && pathname !== '/owner.html') return false;
@@ -53,10 +54,16 @@ export async function handleOwner(req, res, pathname, store, root, json) {
             if (pathname === '/api/owner/logout' && req.method === 'POST') {
                 store.logout(auth); res.setHeader('Set-Cookie', cookie('', 0)); json(res, { ok: true });
             } else if (pathname === '/api/owner/entries' && req.method === 'GET') {
-                json(res, { entries: store.all(), trash: store.trash() });
+                json(res, { entries: store.all(), trash: store.trash(), drafts: store.drafts() });
             } else if (pathname === '/api/owner/export' && req.method === 'GET') {
                 res.setHeader('Content-Disposition', 'attachment; filename="ease2k-editor-backup.json"');
-                json(res, { version: 1, exportedAt: new Date().toISOString(), entries: store.all(), trash: store.trash() });
+                json(res, { version: 1, exportedAt: new Date().toISOString(), entries: store.all(), trash: store.trash(), drafts: store.drafts() });
+            } else if (pathname === '/api/owner/media' && req.method === 'POST') {
+                json(res, await upload(req, directory));
+            } else if (pathname.startsWith('/api/owner/media/') && ['GET', 'HEAD'].includes(req.method)) {
+                if (!serveMedia(req, res, pathname.slice('/api/owner/media/'.length), directory)) throw failure('图片不存在。', 404);
+            } else if (/^\/api\/owner\/drafts\/[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(pathname) && req.method === 'PUT') {
+                json(res, { draft: store.saveDraft(pathname.split('/').at(-1), await body(req)) });
             } else {
                 const match = /^\/api\/owner\/entries\/([A-Za-z0-9][A-Za-z0-9_-]{0,99})(?:\/(history|restore))?$/.exec(pathname);
                 if (!match) throw failure('接口不存在。', 404);

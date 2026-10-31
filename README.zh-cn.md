@@ -48,6 +48,12 @@ npm start
 
 在线内容、草稿和认证信息保存在独立数据目录，默认本机路径为 `self-hosted/data/editor/`，服务器为 `/var/lib/ease2k-blog/editor/`。它们不会随代码重新部署而覆盖，也不会自动提交到 GitHub。请定期导出备份或备份服务器数据目录。
 
+## 阅读与发布体验
+
+列表使用轻量摘要接口，单篇正文按需读取，搜索由服务器检索已发布内容。公开页面预渲染 HTML，文章提供独立描述、分享卡片、结构化数据；不存在或未发布的文章返回 404，`/sitemap.xml` 仅列出公开内容，`/robots.txt` 排除后台接口。
+
+工作台支持自动编辑草稿及浏览器恢复副本、图片上传/粘贴/拖放、自动摘要与阅读时长。发布文章仍需手动点击确认。安装时同时配置每日自动备份，包含数据库、站主配置和图片，并验证恢复。详见 [工作台说明](self-hosted/OWNER.md) 和 [备份恢复说明](self-hosted/BACKUP.md)。
+
 ## 修改内容
 
 | 内容 | 文件或目录 |
@@ -87,6 +93,7 @@ npm run check
 npm test
 npm run test:ratings
 npm run test:owner
+npm run test:improvements
 ```
 
 `npm test` 需要先执行构建；测试公开接口、证书、私密内容隔离和只读限制。安装 Nginx 后，可用 `NGINX_BIN=/path/to/nginx npm run test:nginx` 检查反向代理脚本。

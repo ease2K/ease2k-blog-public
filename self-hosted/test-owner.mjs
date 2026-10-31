@@ -6,7 +6,7 @@ import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { passwordHash } from './runtime/owner-store.mjs';
+import { passwordHash } from './build/owner-store.mjs';
 
 const directory = await mkdtemp(resolve(tmpdir(), 'ease2k-owner-test-'));
 const password = randomBytes(24).toString('base64url');

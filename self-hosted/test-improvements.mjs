@@ -1,0 +1,84 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, writeFile, readFile, rm, readdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+import { randomBytes } from 'node:crypto';
+import { createServer } from 'node:net';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import sharp from 'sharp';
+import { passwordHash } from './build/owner-store.mjs';
+import { createBackup, verifyBackup, restoreBackup } from './runtime/backup.mjs';
+
+const directory = await mkdtemp(resolve(tmpdir(), 'ease2k-improvements-'));
+const data = resolve(directory, 'editor'), backups = resolve(directory, 'backups');
+await (await import('node:fs/promises')).mkdir(data);
+const password = randomBytes(24).toString('hex'), salt = randomBytes(16).toString('hex');
+await writeFile(resolve(data, 'owner.json'), JSON.stringify({ version: 'integration', salt, hash: await passwordHash(password, salt), secret: randomBytes(32).toString('hex') }), { mode: 0o600 });
+const probe = createServer(); probe.listen(0, '127.0.0.1'); await once(probe, 'listening'); const port = probe.address().port; await new Promise(resolve => probe.close(resolve));
+const origin = `http://127.0.0.1:${port}`;
+let child, cookie = '', csrf = '';
+async function start(editor = data) {
+    child = spawn(process.execPath, ['self-hosted/build/server.mjs'], { env: { ...process.env, BLOG_ORIGIN: origin, BLOG_PUBLIC_ORIGIN: 'https://blog.example.test', BLOG_EDITOR_DIR: editor, PORT: String(port) }, stdio: ['ignore', 'pipe', 'pipe'] });
+    let errors = ''; child.stderr.on('data', chunk => errors += chunk);
+    await Promise.race([new Promise(resolve => child.stdout.on('data', chunk => { if (chunk.toString().includes('Blog ready')) resolve(); })), new Promise((_, reject) => child.on('exit', code => reject(Error(`Server exited ${code}: ${errors}`))))]);
+}
+async function stop() { const exited = once(child, 'exit'); child.kill('SIGTERM'); await exited; }
+function request(path, method = 'GET', value, headers = {}) {
+    return fetch(origin + path, { method, headers: { 'Content-Type': 'application/json', Origin: origin, Cookie: cookie, 'X-CSRF-Token': csrf, ...headers }, ...(value !== undefined ? { body: Buffer.isBuffer(value) ? value : JSON.stringify(value) } : {}) });
+}
+const entry = { id: 'publishing-flow', kind: 'article', title: '发布与恢复验证', enTitle: '', summary: '', enSummary: '', body: '原始公开正文'.repeat(300), enBody: '', date: '', read: 1, tags: ['HTML'], visibility: 'public' };
+try {
+    await start();
+    const login = await request('/api/owner/login', 'POST', { password }); assert.equal(login.status, 200); cookie = login.headers.get('set-cookie').split(';')[0];
+    csrf = (await (await request('/api/owner/session')).json()).csrf;
+    const draft = { entry: { ...entry, title: '', body: '未发布的自动草稿标记' }, baseRevision: 0, creating: true, revision: 0 };
+    assert.equal((await request('/api/owner/drafts/' + entry.id, 'PUT', draft)).status, 200);
+    assert.equal((await request('/api/owner/drafts/' + entry.id, 'PUT', draft)).status, 409, 'Concurrent draft writes must not overwrite each other');
+    assert(!(await (await request('/api/blog')).text()).includes(draft.entry.body));
+    assert.equal((await request('/api/owner/entries/' + entry.id, 'PUT', { entry, revision: 0, create: true })).status, 200);
+    let published = (await (await request('/api/entries/' + entry.id)).json()).entry;
+    assert(published.summary.length > 20); assert(published.read > 1);
+    const firstDate = published.date;
+    let owner = await (await request('/api/owner/entries')).json(); assert.equal(owner.drafts.length, 0);
+    const privateEdit = { ...entry, body: 'PRIVATE_EDIT_MUST_NOT_LEAK' };
+    assert.equal((await request('/api/owner/drafts/' + entry.id, 'PUT', { entry: privateEdit, baseRevision: 1, creating: false, revision: 0 })).status, 200);
+    assert.equal((await (await request('/api/entries/' + entry.id)).json()).entry.body, entry.body);
+    const index = await (await request('/api/index')).json();
+    assert(index.entries.some(value => value.id === entry.id)); assert(index.entries.every(value => !Object.hasOwn(value, 'body') && !Object.hasOwn(value, 'enBody')));
+    assert.equal((await (await request('/api/search?q=PRIVATE_EDIT_MUST_NOT_LEAK')).json()).entries.length, 0);
+    const html = await (await request('/entry/' + entry.id)).text();
+    assert(html.includes(entry.body)); assert(html.includes('property="og:title"')); assert(html.includes('application/ld+json')); assert(html.includes('https://blog.example.test/entry/' + entry.id));
+    assert.equal((await request('/entry/does-not-exist')).status, 404);
+    assert.equal((await request('/made-up-page')).status, 404);
+    const bytes = await sharp({ create: { width: 40, height: 30, channels: 3, background: '#2646c7' } }).webp().toBuffer();
+    const image = await request('/api/owner/media', 'POST', bytes, { 'Content-Type': 'image/webp' }); assert.equal(image.status, 200);
+    const media = await image.json(); assert.equal(media.width, 40); assert.equal(media.height, 30);
+    assert.equal((await request(media.url)).status, 404, 'Unpublished images must remain private');
+    assert.equal((await request('/api/owner' + media.url)).status, 200);
+    assert.equal((await request('/api/owner/media', 'POST', Buffer.from('<svg></svg>'), { 'Content-Type': 'image/webp' })).status, 400);
+    assert.equal((await request('/api/owner/media', 'POST', bytes, { 'Content-Type': 'image/webp', 'X-CSRF-Token': 'bad' })).status, 403);
+    assert.equal((await request('/api/owner' + media.url, 'GET', undefined, { 'X-Forwarded-For': '203.0.113.9' })).status, 404);
+    const withImage = { ...entry, body: entry.body + '\n\n![图片](' + media.url + ')' };
+    assert.equal((await request('/api/owner/entries/' + entry.id, 'PUT', { entry: withImage, revision: 1 })).status, 200);
+    assert.equal((await request(media.url)).status, 200);
+    published = (await (await request('/api/entries/' + entry.id)).json()).entry; assert.equal(published.date, firstDate);
+    const privateEntry = { ...entry, id: 'secret-article', body: 'PRIVATE_ARTICLE_MARKER', visibility: 'private' };
+    assert.equal((await request('/api/owner/entries/' + privateEntry.id, 'PUT', { entry: privateEntry, revision: 0, create: true })).status, 200);
+    assert.equal((await request('/entry/' + privateEntry.id)).status, 404);
+    assert.equal((await request('/api/entries/' + privateEntry.id)).status, 404);
+    const sitemap = await (await request('/sitemap.xml')).text(); assert(sitemap.includes('/entry/' + entry.id)); assert(!sitemap.includes(privateEntry.id));
+    assert((await (await request('/robots.txt')).text()).includes('Disallow: /_owner'));
+    assert.equal((await (await request('/api/search?q=原始公开正文')).json()).entries.some(value => value.id === entry.id), true);
+    const backup = createBackup(data, backups, 2); assert.equal(backup.restorationTest, true); assert.equal(backup.entries, 2);
+    const restored = resolve(directory, 'restored'); assert.deepEqual(restoreBackup(backup.directory, restored), verifyBackup(backup.directory));
+    assert.throws(() => restoreBackup(backup.directory, restored), /空目录/);
+    const mediaFile = resolve(backup.directory, 'media', media.url.split('/').at(-1));
+    const original = await readFile(mediaFile); await writeFile(mediaFile, 'corrupted'); assert.throws(() => verifyBackup(backup.directory), /校验失败/); await writeFile(mediaFile, original);
+    createBackup(data, backups, 2); createBackup(data, backups, 2); assert.equal((await readdir(backups)).length, 2);
+    await stop(); await start(restored);
+    assert((await (await request('/api/owner/session')).json()).authenticated, 'Restoration must preserve owner sessions and configuration');
+    assert.equal((await (await request('/api/entries/' + entry.id)).json()).entry.body, withImage.body);
+    assert.equal((await request(media.url)).status, 200);
+    console.log('PASS: private autosave and conflicts, isolated publication, summary and reading time, slim index, full-text search, server-rendered article and metadata, real 404, authenticated image upload and private preview, publication-gated images, snapshot backup, retention and verified restoration.');
+} finally { if (child?.exitCode === null) await stop(); await rm(directory, { recursive: true, force: true }); }

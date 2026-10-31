@@ -4,10 +4,11 @@ import Body, { preloadBody } from "@/components/article-body";
 import Ratings from "@/components/ratings";
 import ArticleToc, { type Heading, type OutlineHandler } from "@/components/article-toc";
 import { profiles, portals, authoredProblems, awards, orderedAwards, sections, technologyTopics, inSection, type Entry } from "@/lib/content";
+import { excerpt } from "@/lib/writing";
 import { tagKey, tagName as translatedTagName } from "@/lib/tags";
 
 type Lang = "zh" | "en";
-type View = { entries: Entry[]; ready: boolean };
+export type View = { entries: Entry[]; ready: boolean };
 const names: Record<string, [string, string]> = {
     home: ["首页", "Home"], daily: ["日常", "Journal"], articles: ["文章", "Writing"],
     projects: ["项目", "Projects"], competitions: ["竞赛", "Contests"], about: ["关于我", "About"],
@@ -48,11 +49,11 @@ function entryId(path: string) {
     try { return decodeURIComponent(path.split("/")[2] || ""); } catch { return ""; }
 }
 
-export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
-    const [lang, setLang] = useState<Lang>("zh"), [theme, setTheme] = useState("light"), [path, setPath] = useState(initialPath);
+export default function Blog({ initialPath = "/", initialData, initialEntry, initialLang = "zh" }: { initialPath?: string; initialData?: View; initialEntry?: Entry; initialLang?: Lang }) {
+    const [lang, setLang] = useState<Lang>(initialLang), [theme, setTheme] = useState("light"), [path, setPath] = useState(initialPath);
     const [now, setNow] = useState<Date | null>(null), [preferencesReady, setPreferencesReady] = useState(false);
-    const [loading, setLoading] = useState(true), [returnPath, setReturnPath] = useState("");
-    const [data, setData] = useState<View>({ entries: [], ready: false });
+    const [loading, setLoading] = useState(!initialData), [returnPath, setReturnPath] = useState("");
+    const [data, setData] = useState<View>(initialData || { entries: [], ready: false });
     const [search, setSearch] = useState(""), [tag, setTag] = useState("all"), [month, setMonth] = useState("all");
     const searchDialog = useRef<HTMLDialogElement>(null);
     const main = useRef<HTMLElement>(null), focusPage = useRef(false), requestId = useRef(0);
@@ -60,7 +61,10 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
     const name = (key: string) => names[key]?.[lang === "zh" ? 0 : 1] || key;
     const tagName = (value: string | undefined) => translatedTagName(value, lang);
     const active = path === "/" ? "home" : path.split("/")[1];
-    const selected = active === "entry" ? data.entries.find(e => e.id === entryId(path) && e.body.trim()) : null;
+    const [details, setDetails] = useState<Record<string, Entry>>(initialEntry ? { [initialEntry.id]: initialEntry } : {});
+    const [entryState, setEntryState] = useState({ id: initialData && initialPath.startsWith("/entry/") ? entryId(initialPath) : "", loading: !initialData, failed: false });
+    const selected = active === "entry" ? details[entryId(path)] : null;
+    const [searchResults, setSearchResults] = useState<Entry[]>([]), [searching, setSearching] = useState(false), [searchFailed, setSearchFailed] = useState(false);
     const [outline, setOutline] = useState<{ entry: string; headings: Heading[]; activeId: string }>({ entry: "", headings: [], activeId: "" });
     const outlineEntry = selected?.id || "";
     const updateOutline = useCallback<OutlineHandler>((headings, activeId) => setOutline({ entry: outlineEntry, headings, activeId }), [outlineEntry]);
@@ -68,7 +72,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
     const competitionGroups: Record<string, [string, string]> = { awards: ["竞赛奖项", "Competition awards"], problems: ["原创题目", "Problems I authored"], tutorials: ["竞赛相关算法", "Competition algorithms"] };
     const validCompetitionGroup = !competitionGroup || Object.hasOwn(competitionGroups, competitionGroup);
     const activeNav = active === "entry" && selected ? returnPath === "/articles" ? "articles" : selected.section === "competitions" ? "competitions" : selected.kind === "daily" ? "daily" : selected.kind === "project" ? "projects" : "articles" : active === "award" ? "competitions" : ["algorithms", ...technologyTopics.map(topic => topic.toLowerCase()), "cpp"].includes(active) ? "articles" : active;
-    const list = data.entries.filter(e => !e.sample && e.body.trim()).sort((a, b) => b.date.localeCompare(a.date));
+    const list = data.entries.filter(e => !e.sample && (e.hasBody || e.body.trim())).sort((a, b) => b.date.localeCompare(a.date));
     const title = (e: Entry) => lang === "en" && e.enTitle ? e.enTitle : e.title;
     const summary = (e: Entry) => lang === "en" && e.enSummary ? e.enSummary : e.summary;
     const date = (value: string, options?: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-US", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit", ...options }).format(new Date(value));
@@ -78,11 +82,11 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
         const id = ++requestId.current;
         setLoading(true);
         try {
-            const response = await fetch("/api/blog", { cache: "no-store" });
+            const response = await fetch("/api/index", { cache: "no-store" });
             if (!response.ok) throw new Error();
             const value = await response.json() as View;
             if (!value.ready) throw new Error();
-            if (id === requestId.current) setData({ entries: value.entries.filter(e => e.visibility !== "private"), ready: true });
+            if (id === requestId.current) setData({ entries: value.entries.filter(e => e.visibility !== "private").map(e => ({ ...e, body: "", enBody: "" })), ready: true });
         } catch {
             if (id === requestId.current) setData(value => ({ ...value, ready: false }));
         } finally { if (id === requestId.current) setLoading(false); }
@@ -101,9 +105,34 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
             if (target.isContentEditable) return;
             if ((event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) || (event.key === "/" && !["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) { event.preventDefault(); searchDialog.current?.showModal(); }
         };
-        window.addEventListener("popstate", pop); window.addEventListener("keydown", keyboard); load();
+        window.addEventListener("popstate", pop); window.addEventListener("keydown", keyboard); if (!initialData) load();
         return () => { requestId.current++; window.removeEventListener("popstate", pop); window.removeEventListener("keydown", keyboard); };
     }, [load]);
+    useEffect(() => {
+        if (active !== "entry" || selected) return;
+        const id = entryId(path), controller = new AbortController();
+        setEntryState({ id, loading: true, failed: false });
+        fetch("/api/entries/" + encodeURIComponent(id), { cache: "no-store", signal: controller.signal }).then(async response => {
+            if (response.status === 404) { setEntryState({ id, loading: false, failed: false }); return; }
+            if (!response.ok) throw Error();
+            const value = await response.json();
+            if (!controller.signal.aborted) { setDetails(current => ({ ...current, [id]: value.entry })); setEntryState({ id, loading: false, failed: false }); }
+        }).catch(() => { if (!controller.signal.aborted) setEntryState({ id, loading: false, failed: true }); });
+        return () => controller.abort();
+    }, [path, selected]);
+    useEffect(() => {
+        const query = search.trim(), controller = new AbortController();
+        setSearchResults([]); setSearchFailed(false); setSearching(!!query);
+        if (!query) return;
+        const timer = setTimeout(() => {
+            fetch("/api/search?q=" + encodeURIComponent(query), { cache: "no-store", signal: controller.signal }).then(async response => {
+                if (!response.ok) throw Error();
+                const result = await response.json();
+                if (!controller.signal.aborted) setSearchResults(result.entries.map((entry: Entry) => ({ ...entry, body: "", enBody: "" })));
+            }).catch(() => { if (!controller.signal.aborted) setSearchFailed(true); }).finally(() => { if (!controller.signal.aborted) setSearching(false); });
+        }, 250);
+        return () => { clearTimeout(timer); controller.abort(); };
+    }, [search]);
     useEffect(() => {
         if (active !== "home") return;
         setNow(new Date());
@@ -113,6 +142,18 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
     useEffect(() => { if (!preferencesReady) return; document.documentElement.dataset.theme = theme; }, [theme, preferencesReady]);
     useEffect(() => { if (!preferencesReady) return; document.documentElement.lang = lang === "zh" ? "zh-CN" : "en"; }, [lang, preferencesReady]);
     useEffect(() => { document.title = (active === "home" ? t("个人手记", "Personal notes") : active === "entry" ? (selected ? title(selected) : loading ? t("加载中", "Loading") : t("记录暂不可见", "Entry unavailable")) : active === "award" ? t("竞赛奖项", "Competition award") : active === "competitions" && Object.hasOwn(competitionGroups, competitionGroup) ? t(...competitionGroups[competitionGroup]) : name(active)) + " · eAs1nGG-_-"; }, [path, lang, data, loading]);
+    useEffect(() => {
+        const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+        const origin = canonical ? new URL(canonical.href).origin : window.location.origin;
+        const url = origin + path, description = selected ? lang === "en" ? selected.enSummary || excerpt(selected.enBody || selected.body) : selected.summary || excerpt(selected.body) : t("记录日常，分享算法、C++、Java、MySQL、HTML、CSS 与 JavaScript 的学习和实践。", "Personal notes on algorithms, programming, and everyday life.");
+        if (canonical) canonical.href = url;
+        for (const [selector, value] of [['meta[name="description"]', description], ['meta[property="og:title"]', document.title], ['meta[property="og:description"]', description], ['meta[property="og:url"]', url], ['meta[property="og:type"]', selected ? "article" : "website"]]) document.querySelector(selector)?.setAttribute("content", value);
+        let structured = document.querySelector<HTMLScriptElement>('script[type="application/ld+json"]');
+        if (selected) {
+            if (!structured) { structured = document.createElement("script"); structured.type = "application/ld+json"; document.head.append(structured); }
+            structured.textContent = JSON.stringify({ "@context": "https://schema.org", "@type": "BlogPosting", headline: title(selected), description, datePublished: selected.date, author: { "@type": "Person", name: "ease2k" }, mainEntityOfPage: url });
+        } else structured?.remove();
+    }, [path, lang, selected]);
     useEffect(() => {
         if (focusPage.current) { main.current?.focus({ preventScroll: true }); focusPage.current = false; }
         const current = document.querySelector<HTMLAnchorElement>(".nav-link.active");
@@ -160,7 +201,11 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
             <div className="side-note"><span className="tiny-blue-dot" /><p>{t("这里记录生活，也记录从不懂到想明白的过程。", "Notes on everyday life, and the journey from questions to understanding.")}</p></div>
         </aside>;
     }
-    const searchResults = search.trim() ? list.filter(e => ([e.title, e.enTitle, e.summary, e.enSummary, e.body, e.enBody, ...e.tags, ...e.tags.map(tagKey), ...e.tags.map(value => translatedTagName(value, "en"))].join(" ")).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) : [];
+    const entryLoading = loading || entryState.id !== entryId(path) || entryState.loading;
+    const neighbours = selected ? list.filter(entry => entry.kind === selected.kind) : [];
+    const currentIndex = neighbours.findIndex(entry => entry.id === selected?.id);
+    const related = selected ? list.filter(entry => entry.id !== selected.id).map(entry => ({ entry, score: entry.tags.map(tagKey).filter(value => selected.tags.map(tagKey).includes(value)).length })).filter(value => value.score > 0).sort((a, b) => b.score - a.score).slice(0, 3).map(value => value.entry) : [];
+
 
     return <div className={"site" + (active === "home" ? " site-home" : "")}>{active === "home" && <div className="home-wallpaper" aria-hidden="true" />}<a className="skip-link" href="#main">{t("跳到正文", "Skip to content")}</a>
         <header className="site-header"><div className="identity-bar wrap">
@@ -173,16 +218,17 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
         <main ref={main} tabIndex={-1} className="wrap main-layout" id="main"><div className="main-column">
             {!loading && !data.ready && <div className="load-notice" role="status"><span>{t("日常暂时未能加载，请重试。", "Journal could not load. Please try again.")}</span><button onClick={() => load()}>{t("重新加载", "Retry")}</button></div>}
             {active === "home" && <h1 className="sr-only">{t("eAs1nGG-_- 的个人手记", "Personal notes by eAs1nGG-_-")}</h1>}
-            {active === "home" && <>{sections.map(section)}{!list.length && <div className="empty-state"><NotebookPen /><h2>{t("记录即将开始", "A fresh page")}</h2><p>{t("发布内容后，这里会按主题展示最新记录。", "Published entries will appear here, organized by topic.")}</p></div>}</>}
+            {active === "home" && <>{sections.map(section)}{!list.length && (loading ? <div className="loading-state" role="status">{t("正在加载记录…", "Loading entries…")}</div> : !data.ready ? null : <div className="empty-state"><NotebookPen /><h2>{t("记录即将开始", "A fresh page")}</h2><p>{t("发布内容后，这里会按主题展示最新记录。", "Published entries will appear here, organized by topic.")}</p></div>)}</>}
 
             {([...sections, "cpp"] as string[]).includes(active) && <>
                 <div className="page-heading"><div><span className="page-kicker">{t("个人手记", "Personal notes")}</span><h1>{name(active)}</h1><p>{active === "daily" ? t("收集生活里的片段，也留住偶然的想法。", "Small moments, passing thoughts, and things worth keeping.") : active === "articles" ? t("汇总日常、学习与项目中的所有文章。", "All my writing, from everyday notes to learning and projects.") : t("从一个问题开始，慢慢整理成自己的理解。", "Questions, practice, and a growing understanding.")}</p></div></div>
                 {active === "projects" && profileButtons("github")}
+                <nav className="topic-nav" aria-label={t("技术主题", "Technology topics")}>{["articles", "algorithms", "cpp", ...technologyTopics.map(topic => topic.toLowerCase())].map(key => internal("/" + key, <>{name(key)}<small>{list.filter(entry => inSection(entry, key)).length}</small></>, "topic-link" + (active === key ? " active" : "")))}</nav>
                 <div className="filter-bar"><div className="filter-chips">{["all", ...new Set(list.filter(e => inSection(e, active)).flatMap(e => e.tags.map(tagKey)))].map(value => <button key={value} className={tag === value ? "selected" : ""} aria-pressed={tag === value} onClick={() => setTag(value)}>{value === "all" ? t("全部", "All") : tagName(value)}</button>)}</div>{active === "daily" && <select aria-label={t("按月份筛选", "Filter by month")} value={month} onChange={e => setMonth(e.target.value)}><option value="all">{t("所有月份", "All months")}</option>{[...new Set(list.filter(e => e.kind === "daily").map(e => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date))))].map(value => <option key={value}>{value}</option>)}</select>}</div>
-                {(() => { const items = list.filter(e => inSection(e, active) && (tag === "all" || e.tags.some(value => tagKey(value) === tag)) && (month === "all" || new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date)) === month)); return items.length ? <div className="entry-list full-list">{items.map(row)}</div> : <div className="empty-state"><NotebookPen /><h2>{t("这里还没有记录", "Nothing here yet")}</h2><p>{t("换个筛选条件，或稍后再来看看。", "Try another filter, or check back later.")}</p><button className="secondary-button" onClick={() => { setTag("all"); setMonth("all"); }}>{t("重置筛选", "Reset filters")}</button></div>; })()}
+                {(() => { const items = list.filter(e => inSection(e, active) && (tag === "all" || e.tags.some(value => tagKey(value) === tag)) && (month === "all" || new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date)) === month)); return loading ? <div className="loading-state" role="status">{t("正在加载记录…", "Loading entries…")}</div> : !data.ready ? null : items.length ? <div className="entry-list full-list">{items.map(row)}</div> : <div className="empty-state"><NotebookPen /><h2>{t("这里还没有记录", "Nothing here yet")}</h2><p>{t("换个筛选条件，或稍后再来看看。", "Try another filter, or check back later.")}</p><button className="secondary-button" onClick={() => { setTag("all"); setMonth("all"); }}>{t("重置筛选", "Reset filters")}</button></div>; })()}
             </>}
 
-            {active === "entry" && (selected ? <article className="detail"><button className="back-link" onClick={() => go(returnPath || (selected.section === "competitions" ? "/competitions" : "/" + (selected.kind === "daily" ? "daily" : selected.kind === "project" ? "projects" : "articles")))}><ArrowLeft size={15} />{returnPath?.startsWith("/competitions") || (!returnPath && selected.section === "competitions") ? t("返回竞赛", "Back to contests") : t("返回列表", "Back to entries")}</button>{tags(selected)}<h1>{title(selected)}</h1><p className="detail-summary">{summary(selected)}</p><div className="detail-meta article-meta"><span><CalendarDays size={14} aria-hidden="true" />{t("发布于", "Published")}<time dateTime={selected.date}>{published(selected.date)}</time><small>{t("北京时间", "UTC+8")}</small></span><span><Clock3 size={14} aria-hidden="true" />{selected.read} {t("分钟阅读", "min read")}</span></div>{lang === "en" && !selected.enBody && <p className="language-note">This entry is available in Chinese.</p>}<Body text={lang === "en" && selected.enBody ? selected.enBody : selected.body} lang={lang} onOutline={updateOutline} />{selected.kind === "project" && profileButtons("github")}<div className="article-end"><span /><span>{t("感谢阅读", "Thanks for reading")}</span><span /></div></article> : loading ? <div className="empty-state loading-state" role="status" aria-busy="true"><h1>{t("正在加载记录…", "Loading your note…")}</h1></div> : !data.ready ? <div className="empty-state"><NotebookPen /><h1>{t("暂时无法加载这条记录", "Could not load this entry")}</h1><p>{t("请检查网络连接，再点击上方重新加载。", "Check your connection and use Retry above.")}</p></div> : <div className="empty-state"><BookOpen /><h1>{t("记录暂不可见", "Entry unavailable")}</h1><p>{t("记录可能已删除，或地址有误。", "The entry may have been removed, or the address may be incorrect.")}</p><button className="secondary-button" onClick={() => go("/")}>{t("回到首页", "Go home")}</button></div>)}
+            {active === "entry" && (selected ? <article className="detail"><button className="back-link" onClick={() => go(returnPath || (selected.section === "competitions" ? "/competitions" : "/" + (selected.kind === "daily" ? "daily" : selected.kind === "project" ? "projects" : "articles")))}><ArrowLeft size={15} />{returnPath?.startsWith("/competitions") || (!returnPath && selected.section === "competitions") ? t("返回竞赛", "Back to contests") : t("返回列表", "Back to entries")}</button>{tags(selected)}<h1>{title(selected)}</h1><p className="detail-summary">{summary(selected)}</p><div className="detail-meta article-meta"><span><CalendarDays size={14} aria-hidden="true" />{t("发布于", "Published")}<time dateTime={selected.date}>{published(selected.date)}</time><small>{t("北京时间", "UTC+8")}</small></span><span><Clock3 size={14} aria-hidden="true" />{selected.read} {t("分钟阅读", "min read")}</span></div>{lang === "en" && !selected.enBody && <p className="language-note">This entry is available in Chinese.</p>}<Body text={lang === "en" && selected.enBody ? selected.enBody : selected.body} lang={lang} onOutline={updateOutline} />{selected.kind === "project" && profileButtons("github")}<div className="article-end"><span /><span>{t("感谢阅读", "Thanks for reading")}</span><span /></div><nav className="article-neighbours" aria-label={t("前后文章", "Adjacent entries")}>{[[currentIndex > 0 ? neighbours[currentIndex - 1] : null, t("上一篇", "Previous entry")], [neighbours[currentIndex + 1], t("下一篇", "Next entry")]].map(([entry, label], index) => entry && typeof entry !== "string" ? internal("/entry/" + entry.id, <><small>{String(label)}</small><strong>{title(entry)}</strong></>, "article-neighbour neighbour-" + index) : <span key={index} />)}</nav>{related.length > 0 && <section className="related-entries"><h2>{t("同主题文章", "Related entries")}</h2>{related.map(entry => internal("/entry/" + entry.id, <>{title(entry)}<ArrowUpRight size={14} /></>, "related-link"))}</section>}</article> : entryLoading ? <div className="empty-state loading-state" role="status" aria-busy="true"><h1>{t("正在加载记录…", "Loading your note…")}</h1></div> : entryState.failed ? <div className="empty-state"><NotebookPen /><h1>{t("暂时无法加载这条记录", "Could not load this entry")}</h1><p>{t("请检查网络连接，再点击上方重新加载。", "Check your connection and try again.")}</p><button className="secondary-button" onClick={() => window.location.reload()}>{t("重新加载", "Retry")}</button></div> : <div className="empty-state"><BookOpen /><h1>{t("记录暂不可见", "Entry unavailable")}</h1><p>{t("记录可能已删除，或地址有误。", "The entry may have been removed, or the address may be incorrect.")}</p><button className="secondary-button" onClick={() => go("/")}>{t("回到首页", "Go home")}</button></div>)}
 
             {active === "competitions" && validCompetitionGroup && <div className="competitions-page">
                 {competitionGroup && <button className="back-link" onClick={() => go("/competitions")}><ArrowLeft size={15} />{t("返回竞赛", "Back to contests")}</button>}
@@ -212,7 +258,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
 
         <footer className="site-footer wrap"><div><strong><Nickname /></strong><span> / ease2k</span><p>{t("记录当下，留给以后。", "Notes for now. Something to return to.")}</p></div><div className="footer-actions"><a href={sourceRepository} target="_blank" rel="noopener noreferrer"><PlatformIcon platform="github" />{t("本站源码", "Source code")}<ArrowUpRight size={13} aria-hidden="true" /></a><button onClick={() => window.scrollTo({ top: 0, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" })}><ArrowUp size={14} />{t("回到顶部", "Back to top")}</button></div></footer>
 
-        <dialog ref={searchDialog} className="search-dialog" aria-label={t("搜索站内内容", "Search this site")} onClick={e => { if (e.target === e.currentTarget) searchDialog.current?.close(); }}><div className="dialog-top"><Search size={21} /><input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder={t("搜索文章、项目和日常…", "Search writing, projects, and notes…")} aria-label={t("搜索内容", "Search content")} /><button className="icon-button" aria-label={t("关闭搜索", "Close search")} onClick={() => searchDialog.current?.close()}><X size={18} /></button></div><div className="search-content"><p className="sr-only" role="status">{search.trim() ? t(`找到 ${searchResults.length} 条结果`, `${searchResults.length} results found`) : ""}</p>{search.trim() ? searchResults.length ? searchResults.map(e => internal("/entry/" + e.id, <><span className="search-kind">{name(e.section === "competitions" ? "competitions" : e.kind === "article" ? "articles" : e.kind === "project" ? "projects" : "daily")}</span><strong>{title(e)}</strong><p>{summary(e)}</p></>, "search-result")) : <div className="search-empty"><Search size={26} /><p>{t("没有找到相关内容，试试更短的关键词。", "No results. Try a shorter search.")}</p></div> : <><p className="search-help">{t("从感兴趣的主题开始", "Start with a topic")}</p><div className="suggestions">{["C++", "STL", ...technologyTopics].map(v => <button key={v} onClick={() => setSearch(v)}>{v}</button>)}</div></>}</div><div className="dialog-bottom"><span>{t("搜索本站内容", "Search this site")}</span><span>Esc {t("关闭", "to close")}</span></div></dialog>
+        <dialog ref={searchDialog} className="search-dialog" aria-label={t("搜索站内内容", "Search this site")} onClick={e => { if (e.target === e.currentTarget) searchDialog.current?.close(); }}><div className="dialog-top"><Search size={21} /><input autoFocus value={search} onChange={e => setSearch(e.target.value)} placeholder={t("搜索文章、项目和日常…", "Search writing, projects, and notes…")} aria-label={t("搜索内容", "Search content")} /><button className="icon-button" aria-label={t("关闭搜索", "Close search")} onClick={() => searchDialog.current?.close()}><X size={18} /></button></div><div className="search-content"><p className="sr-only" role="status">{search.trim() ? t(`找到 ${searchResults.length} 条结果`, `${searchResults.length} results found`) : ""}</p>{search.trim() ? searching ? <p className="search-help" role="status">{t("正在搜索…", "Searching…")}</p> : searchFailed ? <p className="search-help" role="alert">{t("搜索暂时失败，请修改关键词重试。", "Search failed. Edit your query to retry.")}</p> : searchResults.length ? searchResults.map(e => internal("/entry/" + e.id, <><span className="search-kind">{name(e.section === "competitions" ? "competitions" : e.kind === "article" ? "articles" : e.kind === "project" ? "projects" : "daily")}</span><strong>{title(e)}</strong><p>{summary(e)}</p></>, "search-result")) : <div className="search-empty"><Search size={26} /><p>{t("没有找到相关内容，试试更短的关键词。", "No results. Try a shorter search.")}</p></div> : <><p className="search-help">{t("从感兴趣的主题开始", "Start with a topic")}</p><div className="suggestions">{["C++", "STL", ...technologyTopics].map(v => <button key={v} onClick={() => setSearch(v)}>{v}</button>)}</div></>}</div><div className="dialog-bottom"><span>{t("搜索本站内容", "Search this site")}</span><span>Esc {t("关闭", "to close")}</span></div></dialog>
 
 
     </div>;

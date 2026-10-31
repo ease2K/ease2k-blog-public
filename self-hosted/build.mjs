@@ -3,12 +3,16 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { build } from 'vite';
 import ts from 'typescript';
+import sharp from 'sharp';
 import { execFileSync } from 'node:child_process';
 const here = fileURLToPath(new URL('.', import.meta.url));
 execFileSync(process.execPath, [resolve(here, '../scripts/build-award-thumbnails.mjs')], { cwd: resolve(here, '..'), stdio: 'inherit' });
 rmSync(resolve(here, 'build'), { recursive: true, force: true });
 await build({ configFile: resolve(here, 'vite.config.mjs') });
-for (const name of ['server.mjs', 'owner-store.mjs', 'owner-http.mjs', 'setup-owner.mjs']) cpSync(resolve(here, 'runtime', name), resolve(here, 'build', name));
+await sharp(resolve(here, '../public/share-card.svg')).png().toFile(resolve(here, 'build/client/share-card.png'));
+await build({ configFile: false, publicDir: false, plugins: [], resolve: { alias: { '@': resolve(here, '..') } }, ssr: { noExternal: true }, build: { ssr: resolve(here, 'render.tsx'), outDir: resolve(here, 'build/ssr'), emptyOutDir: true, rolldownOptions: { output: { entryFileNames: 'render.mjs', chunkFileNames: 'assets/[name]-[hash].mjs' } } } });
+for (const name of ['server.mjs', 'owner-store.mjs', 'owner-http.mjs', 'setup-owner.mjs', 'media.mjs', 'public-pages.mjs', 'backup.mjs']) cpSync(resolve(here, 'runtime', name), resolve(here, 'build', name));
+for (const name of ['writing', 'tags']) writeFileSync(resolve(here, 'build/' + name + '.mjs'), ts.transpileModule(readFileSync(resolve(here, '../lib/' + name + '.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
 writeFileSync(resolve(here, 'build/content.mjs'), ts.transpileModule(readFileSync(resolve(here, '../lib/content.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
 cpSync(resolve(here, '../lib/ratings.mjs'), resolve(here, 'build/ratings.mjs'));
 cpSync(resolve(here, '../lib/ratings-snapshot.json'), resolve(here, 'build/ratings-snapshot.json'));
@@ -20,6 +24,7 @@ cpSync(resolve(here, 'deploy/configure-ip-preview.sh'), resolve(here, 'build/con
 cpSync(resolve(here, 'deploy/install.sh'), resolve(here, 'build/install.sh'));
 cpSync(resolve(here, 'README.md'), resolve(here, 'build/README.md'));
 cpSync(resolve(here, 'OWNER.md'), resolve(here, 'build/OWNER.md'));
+cpSync(resolve(here, 'BACKUP.md'), resolve(here, 'build/BACKUP.md'));
 // Public assets can arrive with 0600 permissions from clipboard attachments.
 function readableRelease(path) {
     chmodSync(path, 0o755);

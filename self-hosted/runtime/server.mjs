@@ -6,9 +6,12 @@ import { entries } from './content.mjs';
 import { getRatings } from './ratings.mjs';
 import { openStore } from './owner-store.mjs';
 import { handleOwner } from './owner-http.mjs';
+import { serveMedia } from './media.mjs';
+import { visible, indexEntry, searchEntries, sitemap, page } from './public-pages.mjs';
 
 const root = resolve(fileURLToPath(new URL('./client/', import.meta.url)));
 const origin = new URL(process.env.BLOG_ORIGIN || 'http://localhost:3000');
+const publicOrigin = new URL(process.env.BLOG_PUBLIC_ORIGIN || origin).origin;
 const port = Number(process.env.PORT || 3000);
 const directory = resolve(process.env.BLOG_EDITOR_DIR || fileURLToPath(new URL('../data/editor/', import.meta.url)));
 const store = openStore(directory, entries);
@@ -27,7 +30,7 @@ async function handle(req, res) {
     const url = new URL(req.url, origin);
     let pathname;
     try { pathname = decodeURIComponent(url.pathname); } catch { return json(res, { error: '无效地址' }, 400); }
-    if (await handleOwner(req, res, pathname, store, root, json)) return;
+    if (await handleOwner(req, res, pathname, store, root, json, directory)) return;
     if (removedRoutes.has(pathname.split('/')[1])) return json(res, { error: '页面不存在' }, 404);
     if (!['GET', 'HEAD'].includes(req.method)) {
         res.setHeader('Allow', 'GET, HEAD');
@@ -36,6 +39,20 @@ async function handle(req, res) {
     if (pathname === '/healthz') return json(res, { ok: true });
     if (req.headers.host !== origin.host) return json(res, { error: '站点地址不匹配，请检查服务配置' }, 421);
     if (pathname === '/api/blog') return json(res, { entries: store.publicEntries(), ready: true });
+    if (pathname === '/api/index') return json(res, { entries: visible(store).map(indexEntry), ready: true });
+    if (pathname === '/api/search') return json(res, { entries: searchEntries(visible(store), url.searchParams.get('q') || '') });
+    if (pathname.startsWith('/api/entries/')) {
+        const entry = visible(store).find(entry => '/api/entries/' + entry.id === pathname);
+        return entry ? json(res, { entry }) : json(res, { error: '记录暂不可见' }, 404);
+    }
+    if (pathname.startsWith('/media/')) {
+        if (visible(store).some(entry => (entry.body + '\n' + entry.enBody).includes(pathname)) && serveMedia(req, res, pathname.slice(7), directory, false)) return;
+        return json(res, { error: '图片不存在' }, 404);
+    }
+    if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {
+        res.writeHead(200, { 'Content-Type': pathname.endsWith('.xml') ? 'application/xml; charset=utf-8' : 'text/plain; charset=utf-8', 'Cache-Control': 'no-cache' });
+        return res.end(req.method === 'HEAD' ? undefined : pathname.endsWith('.xml') ? sitemap(visible(store), publicOrigin) : 'User-agent: *\nDisallow: /_owner\nDisallow: /api/\nSitemap: ' + publicOrigin + '/sitemap.xml\n');
+    }
     if (pathname === '/api/ratings') return json(res, await getRatings());
     if (pathname.includes('\0') || pathname.includes('\\') || pathname.split('/').some(part => part.startsWith('.'))) return json(res, { error: '页面不存在' }, 404);
     let file = resolve(root, '.' + pathname);
@@ -44,7 +61,9 @@ async function handle(req, res) {
     try { stat = statSync(file); } catch {}
     if (!stat?.isFile()) {
         if (extname(pathname) || pathname.startsWith('/api/')) return json(res, { error: '页面不存在' }, 404);
-        file = resolve(root, 'index.html'); stat = statSync(file);
+        const result = await page(req, pathname, store, root, publicOrigin);
+        res.writeHead(result.status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', Vary: 'Accept-Language' });
+        return res.end(req.method === 'HEAD' ? undefined : result.html);
     }
     res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Content-Length': stat.size, 'Cache-Control': file.includes(sep + 'assets' + sep) ? 'public, max-age=31536000, immutable' : 'no-cache' });
     if (req.method === 'HEAD') return res.end();
