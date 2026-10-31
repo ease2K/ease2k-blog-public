@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:net';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import sharp from 'sharp';
@@ -90,5 +90,10 @@ try {
     assert((await readFile(resolve(restored, 'media', name))).length > 0);
     process.env.BLOG_BACKUP_MIN_FREE_BYTES = '9000000000000000000'; assert.throws(() => createBackup(data, resolve(directory, 'backups')), /空间不足/); delete process.env.BLOG_BACKUP_MIN_FREE_BYTES;
     const exported = await json('/api/owner/export'); assert.equal(exported.version, 2); assert(exported.series.length && exported.media.length);
-    console.log('PASS: centralized series migration and persistence, private isolation, cover access, ordering conflicts, search snippets, parsed RSS feeds, resource references, image replacement and draft revisions, history protection, recoverable trash, complete backup restoration and low-disk guard.');
+    const client = resolve(directory, 'client-failure-check');
+    for (const notify of [true, false]) {
+        const result = spawnSync(process.execPath, ['self-hosted/pull-backup.mjs'], { env: { ...process.env, BLOG_BACKUP_HOME: client, BLOG_BACKUP_CONFIG: resolve(client, 'missing.json') }, encoding: 'utf8' });
+        assert.equal(result.status, 1); const state = JSON.parse(result.stdout); assert.equal(state.ok, false); assert.equal(state.notify, notify);
+    }
+    console.log('PASS: centralized series migration and persistence, private isolation, cover access, ordering conflicts, search snippets, parsed RSS feeds, resource references, image replacement and draft revisions, history protection, recoverable trash, complete backup restoration, low-disk guard and repeated-failure notification suppression.');
 } finally { if (child?.exitCode === null) await stop(); await rm(directory, { recursive: true, force: true }); }

@@ -53,7 +53,7 @@ try {
     for (const name of snapshots.slice(30)) rmSync(resolve(home, name), { recursive: true });
     console.log(JSON.stringify(state));
 } catch (error) {
-    const detail = error.code === 'ENOENT' ? '缺少本机备份配置或专用 SSH 密钥。' : String(error.message).replace(/(?:-----BEGIN[^]*?-----END[^]*?-----)/g, '[redacted]').slice(0, 1000);
+    const detail = error.code === 'ENOENT' ? '缺少本机备份配置或专用 SSH 密钥。' : String(error.message).replace(/\(node:\d+\)/g, '(node)').replace(/(?:-----BEGIN[^]*?-----END[^]*?-----)/g, '[redacted]').slice(0, 1000);
     let previous = {}; try { previous = JSON.parse(readFileSync(stateFile, 'utf8')); } catch {}
     const state = { ...previous, checkedAt: new Date().toISOString(), ok: false, error: detail, notify: previous.ok !== false || previous.error !== detail, event: 'failed' };
     try { writeFileSync(stateFile, JSON.stringify(state, null, 4), { mode: 0o600 }); chmodSync(stateFile, 0o600); } catch {}
