@@ -126,3 +126,8 @@ Search includes matching snippets and in-article navigation. The owner workspace
 ## On-device article translation
 
 The owner workspace supports Chinese–English translation using desktop Chrome’s built-in Translator API. Titles, summaries, and Markdown are previewed before application to a private editing draft. Code, mathematics, and link destinations are preserved. Language packs may need an initial download; no translation API key is required. Review translations before publication. See the [owner guide](self-hosted/OWNER.md).
+
+
+## Owner entrance
+
+The footer nickname opens the local owner workspace in a new tab while its SSH tunnel is connected. An optional 30-day remember-device checkbox complements the default eight-hour session; logout and password reset revoke the corresponding sessions. Public owner access remains disabled. See the [owner guide](self-hosted/OWNER.md).

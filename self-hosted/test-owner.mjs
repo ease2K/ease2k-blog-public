@@ -6,7 +6,8 @@ import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { randomBytes, randomUUID } from 'node:crypto';
-import { passwordHash } from './build/owner-store.mjs';
+import { DatabaseSync } from 'node:sqlite';
+import { passwordHash, digest } from './build/owner-store.mjs';
 
 const directory = await mkdtemp(resolve(tmpdir(), 'ease2k-owner-test-'));
 const password = randomBytes(24).toString('base64url');
@@ -26,12 +27,17 @@ async function stop() { const exited = once(child, 'exit'); child.kill('SIGTERM'
 function request(path, method = 'GET', value, extra = {}) {
     return fetch(origin + path, { method, redirect: 'manual', headers: { 'Content-Type': 'application/json', Origin: origin, ...(cookie ? { Cookie: cookie } : {}), ...(csrf ? { 'X-CSRF-Token': csrf } : {}), ...extra }, ...(value !== undefined ? { body: JSON.stringify(value) } : {}) });
 }
-async function login() {
-    const response = await request('/api/owner/login', 'POST', { password });
+async function login(remember = false) {
+    const response = await request('/api/owner/login', 'POST', { password, remember });
     assert.equal(response.status, 200);
     const header = response.headers.get('set-cookie');
     assert.match(header, /HttpOnly/); assert.match(header, /SameSite=Strict/); assert.match(header, /Path=\/api\/owner/);
+    const seconds = (remember === true ? 30 * 24 : 8) * 60 * 60;
+    assert.match(header, new RegExp('Max-Age=' + seconds + '(?:;|$)'));
     cookie = header.split(';')[0];
+    const db = new DatabaseSync(resolve(directory, 'content.sqlite'), { readOnly: true });
+    const remaining = db.prepare('SELECT expires FROM sessions WHERE hash=?').get(digest(cookie.split('=')[1])).expires - Date.now(); db.close();
+    assert(remaining > seconds * 1000 - 30000 && remaining <= seconds * 1000);
     csrf = (await (await request('/api/owner/session')).json()).csrf;
     assert(csrf);
 }
@@ -86,6 +92,10 @@ try {
     for (const file of await readdir('self-hosted/build/client/assets')) {
         if (file.endsWith('.js')) assert(!(await readFile('self-hosted/build/client/assets/' + file, 'utf8')).includes(entry.body));
     }
+    await login('true'); // Only the explicit boolean opt-in may extend a session.
+    await login(true);
+    await stop(); await start();
+    assert((await (await request('/api/owner/session')).json()).authenticated, 'Remembered login must survive restart');
     const changed = { ...config, version: randomUUID(), secret: randomBytes(32).toString('hex') };
     await writeFile(resolve(directory, 'owner.json'), JSON.stringify(changed), { mode: 0o600 });
     assert.equal((await request('/api/owner/entries')).status, 401, 'Password reset must invalidate existing sessions');
@@ -95,5 +105,5 @@ try {
     cookie = ''; csrf = '';
     for (let i = 0; i < 8; i++) assert.equal((await request('/api/owner/login', 'POST', { password: 'incorrect-test-password' })).status, 401);
     assert.equal((await request('/api/owner/login', 'POST', { password })).status, 429);
-    console.log('PASS: SSH-only access, password hashing, sessions, CSRF, drafts, publication, revision conflicts, restart persistence, bundled overrides, trash recovery, history, export, logout and login throttling.');
+    console.log('PASS: SSH-only access, password hashing, 8-hour and opt-in 30-day sessions, CSRF, drafts, publication, revision conflicts, restart persistence, bundled overrides, trash recovery, history, export, logout and login throttling.');
 } finally { if (child?.exitCode === null) await stop(); await rm(directory, { recursive: true, force: true }); }

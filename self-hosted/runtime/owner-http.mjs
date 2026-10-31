@@ -46,8 +46,8 @@ export async function handleOwner(req, res, pathname, store, root, json, directo
         if (pathname === '/api/owner/session' && req.method === 'GET') {
             json(res, { configured: !!store.owner(), authenticated: !!auth, ...(auth ? { csrf: auth.csrf } : {}) });
         } else if (pathname === '/api/owner/login' && req.method === 'POST') {
-            const value = await body(req), token = await store.login(value.password);
-            res.setHeader('Set-Cookie', cookie(token));
+            const value = await body(req), remember = value.remember === true, token = await store.login(value.password, remember);
+            res.setHeader('Set-Cookie', cookie(token, (remember ? 30 * 24 : 8) * 60 * 60));
             json(res, { ok: true });
         } else {
             if (!auth) throw failure('请先登录。', 401);

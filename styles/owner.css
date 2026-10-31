@@ -128,3 +128,5 @@
 .owner-translation .translation-chevron { margin-left: auto; margin-right: 12px; transition: transform .15s; }
 .owner-translation[open] .translation-chevron { transform: rotate(180deg); }
 @media (prefers-reduced-motion: reduce) { .owner-translation .translation-chevron { transition: none; } }
+
+.owner-login .owner-remember { flex-direction: row; align-items: center; gap: 9px; margin-top: 16px; }.owner-login .owner-remember input { width: 18px; height: 18px; padding: 0; flex-shrink: 0; }

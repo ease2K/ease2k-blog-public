@@ -73,7 +73,7 @@ export function openStore(directory, bundled) {
         const row = db.prepare('SELECT * FROM sessions WHERE hash=? AND version=? AND expires>?').get(digest(cookie), config.version, Date.now());
         return row ? { hash: row.hash, csrf: createHmac('sha256', config.secret).update(cookie).digest('base64url') } : null;
     }
-    async function login(password) {
+    async function login(password, remember = false) {
         const config = owner();
         if (!config) throw failure('请先在服务器终端设置站主密码。', 503);
         const now = Date.now(), window = 15 * 60 * 1000;
@@ -88,7 +88,7 @@ export function openStore(directory, bundled) {
         db.prepare('DELETE FROM attempts WHERE version=?').run(config.version);
         db.prepare('DELETE FROM sessions WHERE expires<=? OR version<>?').run(now, config.version);
         const token = randomBytes(32).toString('base64url');
-        db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(digest(token), config.version, now + 8 * 60 * 60 * 1000);
+        db.prepare('INSERT INTO sessions VALUES (?,?,?)').run(digest(token), config.version, now + (remember === true ? 30 * 24 : 8) * 60 * 60 * 1000);
         return token;
     }
     function validate(value) {

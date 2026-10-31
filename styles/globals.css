@@ -491,3 +491,5 @@ select:not([multiple]):not([size]), select[size="1"]:not([multiple]) {
         padding-inline-end: 12px;
     }
 }
+
+.footer-identity { display: flex; align-items: center; gap: 4px; }.footer-owner { display: inline-flex; align-items: center; min-height: 44px; color: inherit; text-decoration: none; }.footer-owner:hover strong { color: var(--blue-text); }.footer-owner:focus-visible { outline: 2px solid var(--blue-text); outline-offset: 4px; border-radius: 3px; }

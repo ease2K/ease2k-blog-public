@@ -25,6 +25,7 @@ export default function Owner() {
     const translationArea = useRef<HTMLDivElement>(null);
     const [workspace, setWorkspace] = useState("articles"), [panelDirty, setPanelDirty] = useState(false), [registered, setRegistered] = useState<SeriesRecord[]>([]);
     const [session, setSession] = useState<Session | null>(null), [password, setPassword] = useState("");
+    const [rememberDevice, setRememberDevice] = useState(false);
     const [entries, setEntries] = useState<Item[]>([]), [trash, setTrash] = useState<Item[]>([]);
     const [form, setForm] = useState<Item | null>(null), [creating, setCreating] = useState(false), [dirty, setDirty] = useState(false);
     const [tags, setTags] = useState(""), [query, setQuery] = useState(""), [view, setView] = useState("all");
@@ -142,7 +143,7 @@ export default function Owner() {
     }
     async function login(event: FormEvent) {
         event.preventDefault(); setBusy(true); setError("");
-        try { await api("/login", "POST", { password }); await refresh(); }
+        try { await api("/login", "POST", { password, remember: rememberDevice }); await refresh(); }
         catch (err) { setError((err as Error).message); }
         finally { setPassword(""); setBusy(false); }
     }
@@ -191,7 +192,7 @@ export default function Owner() {
             const link = document.createElement("a"); link.href = url; link.download = "ease2k-editor-backup-" + new Date().toISOString().slice(0, 10) + ".json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (err) { setError((err as Error).message); }
     }
-    if (!session?.authenticated) return <main className="owner-login"><a className="owner-brand" href="/">ease2k <span>站主入口</span></a><section className="owner-login-card"><LockKeyhole size={26} /><h1>继续写下去。</h1><p>通过 SSH 隧道连接后，输入站主密码进入工作台。</p>{error && <p className="owner-error" role="alert">{error}</p>}{session && !session.configured ? <p className="owner-notice">尚未设置站主密码。请先在服务器终端运行密码设置命令，然后刷新此页。</p> : <form onSubmit={login}><label htmlFor="owner-password">站主密码</label><input id="owner-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} minLength={12} maxLength={512} required disabled={busy || !session} /><button className="owner-primary" disabled={busy || !session}>{busy ? "正在验证…" : "进入工作台"}</button></form>}</section></main>;
+    if (!session?.authenticated) return <main className="owner-login"><a className="owner-brand" href="/">ease2k <span>站主入口</span></a><section className="owner-login-card"><LockKeyhole size={26} /><h1>继续写下去。</h1><p>输入站主密码，继续编辑你的文章。</p>{error && <p className="owner-error" role="alert">{error}</p>}{session && !session.configured ? <p className="owner-notice">尚未设置站主密码。请先在服务器终端运行密码设置命令，然后刷新此页。</p> : <form onSubmit={login}><label htmlFor="owner-password">站主密码</label><input id="owner-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} minLength={12} maxLength={512} required disabled={busy || !session} /><label className="owner-checkbox owner-remember"><input type="checkbox" checked={rememberDevice} onChange={event => setRememberDevice(event.target.checked)} disabled={busy || !session} />记住这台设备（30 天）</label><button className="owner-primary" disabled={busy || !session}>{busy ? "正在验证…" : "进入工作台"}</button></form>}</section></main>;
     const catalog = registered.map(group => ({ ...group, chapters: entries.filter(entry => entry.series?.id === group.id) }));
     function chooseSeries(id: string) {
         if (!form) return;
