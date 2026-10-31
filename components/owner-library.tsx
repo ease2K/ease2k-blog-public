@@ -1,3 +1,4 @@
+import { newId } from "@/lib/identifier";
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, GripVertical, ImagePlus, LibraryBig, RotateCcw, Upload } from "lucide-react";
 import type { Entry } from "@/lib/content";
@@ -36,7 +37,7 @@ export default function OwnerLibrary({ active, api, csrf, entries, changed, inse
     }
     function select(value: SeriesRecord | null) {
         if (dirty && !window.confirm("专栏有尚未保存的修改，放弃这些修改？")) return;
-        setForm(value || { id: "series-" + crypto.randomUUID().slice(0, 8), title: "", description: "", enTitle: "", enDescription: "", chapterOrder: [], revision: 0 }); setFresh(!value); setDirty(false); setError(""); setMessage("");
+        setForm(value || { id: "series-" + newId().slice(0, 8), title: "", description: "", enTitle: "", enDescription: "", chapterOrder: [], revision: 0 }); setFresh(!value); setDirty(false); setError(""); setMessage("");
     }
     function update(value: Partial<SeriesRecord>) { setForm(current => current ? { ...current, ...value } : current); setDirty(true); }
     const members = form ? entries.filter(entry => entry.series?.id === form.id).sort((a, b) => {

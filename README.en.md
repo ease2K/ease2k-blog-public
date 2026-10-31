@@ -130,4 +130,4 @@ The owner workspace supports Chineseâ€“English translation using desktop Chromeâ
 
 ## Owner entrance
 
-The footer nickname opens the owner workspace. With HTTPS configured, editing works online without a local SSH tunnel. Login offers an optional 30-day remembered device, with password checks, CSRF protection, logout revocation, and isolated private drafts. See the [owner guide](self-hosted/OWNER.md).
+The footer nickname opens the online owner workspace without a local SSH tunnel. Login offers an optional 30-day remembered device. HTTPS is supported by default; HTTP requires explicit acceptance of plaintext transmission and unavailable on-device translation. Password checks, CSRF, logout revocation and private drafts remain. See the [owner guide](self-hosted/OWNER.md).

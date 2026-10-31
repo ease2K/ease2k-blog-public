@@ -23,7 +23,8 @@ function ownerAccess(req) {
     if (/^[a-f0-9]{64}$/.test(secret) && equal(req.headers['x-ease2k-owner-proxy'], secret)) {
         try {
             const origin = new URL(process.env.BLOG_OWNER_PUBLIC_ORIGIN);
-            if (origin.protocol === 'https:' && !origin.username && !origin.password && req.headers['x-forwarded-proto'] === 'https' && req.headers['x-forwarded-host'] === origin.host && !req.headers.forwarded) return { origin: origin.origin, secure: true };
+            const allowed = origin.protocol === 'https:' || origin.protocol === 'http:' && process.env.BLOG_OWNER_ALLOW_HTTP === '1';
+            if (allowed && !origin.username && !origin.password && req.headers['x-forwarded-proto'] === origin.protocol.slice(0, -1) && req.headers['x-forwarded-host'] === origin.host && !req.headers.forwarded) return { origin: origin.origin, secure: origin.protocol === 'https:' };
         } catch {}
         return null;
     }

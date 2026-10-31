@@ -21,7 +21,7 @@ cpSync(resolve(here, '../lib/journal.json'), resolve(here, 'build/journal.json')
 const { entries } = await import(new URL('./build/content.mjs', import.meta.url).href + '?check=' + Date.now());
 if (entries.some(entry => entry.visibility === 'private')) throw new Error('静态内容包仅可包含公开内容。');
 cpSync(resolve(here, 'deploy/configure-ip-preview.sh'), resolve(here, 'build/configure-ip-preview.sh'));
-for (const name of ['owner-nginx.mjs', 'issue-owner-certificate.sh']) cpSync(resolve(here, 'deploy', name), resolve(here, 'build', name));
+for (const name of ['owner-nginx.mjs', 'issue-owner-certificate.sh', 'configure-owner-http.sh']) cpSync(resolve(here, 'deploy', name), resolve(here, 'build', name));
 cpSync(resolve(here, 'deploy/install-backup-channel.sh'), resolve(here, 'build/install-backup-channel.sh'));
 cpSync(resolve(here, 'deploy/install.sh'), resolve(here, 'build/install.sh'));
 cpSync(resolve(here, 'README.md'), resolve(here, 'build/README.md'));

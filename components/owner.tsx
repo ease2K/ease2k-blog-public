@@ -1,3 +1,4 @@
+import { newId } from "@/lib/identifier";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowUpRight, Download, FilePlus2, History, LockKeyhole, LogOut, RotateCcw, Save, Send, Trash2, ImagePlus } from "lucide-react";
 import OwnerLibrary, { uploadResource, type SeriesRecord } from "@/components/owner-library";
@@ -20,6 +21,7 @@ function localDate(value: string) {
 }
 function normalise(entry: Item): Item { return { ...entry, visibility: entry.visibility === "private" ? "private" : "public" }; }
 export default function Owner() {
+    const insecureOnline = typeof window !== "undefined" && window.location.protocol === "http:" && !["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
     const [translating, setTranslating] = useState(false);
     const [translationOpen, setTranslationOpen] = useState(false), [translationPending, setTranslationPending] = useState(false), [englishOpen, setEnglishOpen] = useState(false);
     const translationArea = useRef<HTMLDivElement>(null);
@@ -136,7 +138,7 @@ export default function Owner() {
         setTranslationOpen(false); setEnglishOpen(false); setForm(normalise(entry)); setTags(entry.tags.join(", ")); setCreating(fresh); setDirty(false); setDraftSaved(false); setVersions(null); setPreview(false); setMessage(""); setError("");
     }
     function create() {
-        choose({ id: crypto.randomUUID(), kind: "article", title: "", enTitle: "", summary: "", enSummary: "", body: "", enBody: "", date: "", publishedAt: null, tags: [], read: 1, visibility: "private", revision: 0 }, true);
+        choose({ id: newId(), kind: "article", title: "", enTitle: "", summary: "", enSummary: "", body: "", enBody: "", date: "", publishedAt: null, tags: [], read: 1, visibility: "private", revision: 0 }, true);
     }
     function change<K extends keyof Item>(key: K, value: Item[K]) {
         setForm(current => current ? { ...current, [key]: value } : current); setDirty(true); setDraftSaved(false); setMessage("");
@@ -192,7 +194,7 @@ export default function Owner() {
             const link = document.createElement("a"); link.href = url; link.download = "ease2k-editor-backup-" + new Date().toISOString().slice(0, 10) + ".json"; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (err) { setError((err as Error).message); }
     }
-    if (!session?.authenticated) return <main className="owner-login"><a className="owner-brand" href="/">ease2k <span>站主入口</span></a><section className="owner-login-card"><LockKeyhole size={26} /><h1>继续写下去。</h1><p>输入站主密码，继续编辑你的文章。</p>{error && <p className="owner-error" role="alert">{error}</p>}{session && !session.configured ? <p className="owner-notice">尚未设置站主密码。请先在服务器终端运行密码设置命令，然后刷新此页。</p> : <form onSubmit={login}><label htmlFor="owner-password">站主密码</label><input id="owner-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} minLength={12} maxLength={512} required disabled={busy || !session} /><label className="owner-checkbox owner-remember"><input type="checkbox" checked={rememberDevice} onChange={event => setRememberDevice(event.target.checked)} disabled={busy || !session} />记住这台设备（30 天）</label><button className="owner-primary" disabled={busy || !session}>{busy ? "正在验证…" : "进入工作台"}</button></form>}</section></main>;
+    if (!session?.authenticated) return <main className="owner-login"><a className="owner-brand" href="/">ease2k <span>站主入口</span></a><section className="owner-login-card"><LockKeyhole size={26} /><h1>继续写下去。</h1><p>输入站主密码，继续编辑你的文章。</p>{insecureOnline && <p className="owner-notice" role="status">当前使用 HTTP 连接，登录信息与文章内容没有传输加密。</p>}{error && <p className="owner-error" role="alert">{error}</p>}{session && !session.configured ? <p className="owner-notice">尚未设置站主密码。请先在服务器终端运行密码设置命令，然后刷新此页。</p> : <form onSubmit={login}><label htmlFor="owner-password">站主密码</label><input id="owner-password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} minLength={12} maxLength={512} required disabled={busy || !session} /><label className="owner-checkbox owner-remember"><input type="checkbox" checked={rememberDevice} onChange={event => setRememberDevice(event.target.checked)} disabled={busy || !session} />记住这台设备（30 天）</label><button className="owner-primary" disabled={busy || !session}>{busy ? "正在验证…" : "进入工作台"}</button></form>}</section></main>;
     const catalog = registered.map(group => ({ ...group, chapters: entries.filter(entry => entry.series?.id === group.id) }));
     function chooseSeries(id: string) {
         if (!form) return;

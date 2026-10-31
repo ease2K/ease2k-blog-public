@@ -1,6 +1,6 @@
 # 站主工作台
 
-工作台支持配置后的 HTTPS 在线入口，并保留 SSH 维护方式。普通 HTTP 不接受密码或后台写入。入口路径为 `/_owner`，不出现在主导航中；密码和会话校验才是授权依据。
+工作台支持配置后的在线入口，并保留 SSH 维护方式。默认只接受本机或已验证的 HTTPS 代理；只有站主明确选择并设置允许标志后才接受公网 HTTP。入口路径为 `/_owner`，不出现在主导航中；密码和会话校验才是授权依据。
 
 ## 首次设置站主密码
 
@@ -16,7 +16,7 @@ runuser -u easeblog -- env BLOG_EDITOR_DIR=/var/lib/ease2k-blog/editor node /opt
 
 ## 打开工作台
 
-配置 HTTPS 后，点击网站页脚昵称即可在新标签页进入在线后台，输入站主密码即可编辑；日常使用无需本机 SSH 隧道。登录页可选记住设备 30 天。
+配置在线代理后，点击网站页脚昵称即可在新标签页进入在线后台，输入站主密码即可编辑；日常使用无需本机 SSH 隧道。登录页可选记住设备 30 天。
 
 SSH 仍可作为备用维护方式。在自己的电脑建立 SSH 隧道，替换服务器地址和私钥路径：
 
@@ -134,7 +134,7 @@ int main() {
 
 ## 页脚入口与记住设备
 
-网站页脚的昵称是站主入口，保持普通署名样式，支持点击、触屏和键盘访问。HTTP 网站的入口在启用下文配置后跳转 HTTPS；本机预览直接进入本机后台。
+网站页脚的昵称是站主入口，保持普通署名样式，支持点击、触屏和键盘访问。选择 HTTPS 模式时，HTTP 入口会跳转至 HTTPS；明确启用 HTTP 模式时直接打开在线后台。
 
 普通登录有效期为 8 小时。自行勾选“记住这台设备（30 天）”后，同一浏览器可以保持登录 30 天，不保存明文密码。退出登录会立即撤销当前会话；重置站主密码会让全部旧会话失效。清除浏览器 Cookie、更换设备或超过有效期后需重新登录。
 
@@ -151,3 +151,16 @@ bash issue-owner-certificate.sh YOUR_PUBLIC_IPV4 --accept-terms
 配置会备份到 `/var/backups/ease2k-owner-https.*`。密码哈希和文章数据保持原样。服务器仍仅监听本机 3000；Nginx 通过独立代理密钥及固定 HTTPS 来源访问后台，公共只读接口继续过滤凭据。代理密钥保存在 root 可读的 `/etc/ease2k-blog/owner-https.env` 和 Nginx 配置中，不得提交源码或显示在日志里。HTTPS 使用 `Secure`、`HttpOnly`、`SameSite=Strict` 和 `__Host-` Cookie；保留原有 CSRF、密码尝试限制及 SSH 维护入口。
 
 验证：`npm run test:owner-https` 使用临时测试证书和真实 Nginx，检查代理伪造、Cookie、会话有效期、退出撤销、私密内容隔离和 SSH 兼容，不需要真实站主密码。
+
+
+## 明确选择公网 HTTP
+
+HTTP 不加密传输，站主密码、登录 Cookie 和文章内容可能被网络中间方读取或篡改；隐蔽入口不能代替传输加密。Chrome 本机翻译在公网 HTTP 中不可用。只有站主已明确接受这些限制后，才运行：
+
+```bash
+bash configure-owner-http.sh YOUR_PUBLIC_IPV4 --allow-plaintext-login
+```
+
+该模式设置 `BLOG_OWNER_ALLOW_HTTP=1`、固定 HTTP 来源和独立代理密钥，保留密码校验、登录尝试限制、CSRF、私有草稿隔离、8 小时或可选 30 天会话。未设置允许标志时，即使代理来源配置为 HTTP 也会被拒绝。登录页会显示未加密连接提示。浏览器在 HTTP 下缺少 `crypto.randomUUID` 时使用 `crypto.getRandomValues` 生成 UUID，支持新建文章和专栏。
+
+配置会备份至 `/var/backups/ease2k-owner-http.*`；旧 HTTPS 入口和证书续期任务停用，现有证书文件保留。证书代理环境文件仍为 `/etc/ease2k-blog/owner-https.env`，其文件名不决定访问协议。测试使用 `npm run test:owner-http`。
