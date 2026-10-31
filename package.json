@@ -17,9 +17,11 @@
     "test:nginx": "node scripts/test-ip-preview.mjs",
     "owner:setup": "node self-hosted/build/setup-owner.mjs",
     "test:owner": "node self-hosted/test-owner.mjs",
-    "test:improvements": "node self-hosted/test-improvements.mjs"
+    "test:improvements": "node self-hosted/test-improvements.mjs",
+    "test:learning": "node self-hosted/test-learning.mjs"
   },
   "dependencies": {
+    "highlight.js": "^11.12.0",
     "katex": "^0.19.1",
     "lucide-react": "^1.31.0",
     "react": "19.2.6",

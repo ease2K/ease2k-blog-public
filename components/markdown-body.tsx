@@ -1,22 +1,21 @@
 import { Children, isValidElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Check, Copy } from "lucide-react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ArticleToc, { type Heading, type OutlineHandler } from "@/components/article-toc";
-import { copyText } from "@/lib/clipboard";
+import CodeBlock from "@/components/code-block";
 
 type Lang = "zh" | "en";
 type MathPlugins = typeof import("@/lib/math-plugins");
 let mathRequest: Promise<MathPlugins> | undefined;
 function loadMath() { return mathRequest ||= import("@/lib/math-plugins").catch(error => { mathRequest = undefined; throw error; }); }
-function CodeBlock({ code, language, lang }: { code: string; language: string; lang: Lang }) {
-    const [copied, setCopied] = useState(false), [failed, setFailed] = useState(false);
-    const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-    useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
-    return <div className="code-block"><div className="code-header"><span>{language}</span><button aria-label={lang === "zh" ? "复制代码" : "Copy code"} onClick={async () => {
-        try { await copyText(code); setCopied(true); setFailed(false); if (timer.current) clearTimeout(timer.current); timer.current = setTimeout(() => setCopied(false), 1600); }
-        catch { setCopied(false); setFailed(true); }
-    }}>{copied ? <Check size={15} /> : <Copy size={15} />}{copied ? (lang === "zh" ? "已复制" : "Copied") : (lang === "zh" ? "复制" : "Copy")}</button></div>{failed && <p className="copy-feedback" role="status">{lang === "zh" ? "复制未成功，请选中代码手动复制。" : "Copy failed. Select the code and copy it manually."}</p>}<pre tabIndex={0} aria-label={lang === "zh" ? "代码" : "Code"}><code>{code}</code></pre></div>;
+function codeMetadata() {
+    return (tree: { type?: string; meta?: string; data?: Record<string, unknown>; children?: unknown[] }) => {
+        function visit(node: typeof tree) {
+            if (node.type === "code" && node.meta) node.data = { ...node.data, hProperties: { "data-code-meta": node.meta } };
+            for (const child of node.children || []) visit(child as typeof tree);
+        }
+        visit(tree);
+    };
 }
 
 export default function MarkdownBody({ text, lang, onOutline, owner = false }: { text: string; lang: Lang; onOutline?: OutlineHandler; owner?: boolean }) {
@@ -55,16 +54,16 @@ export default function MarkdownBody({ text, lang, onOutline, owner = false }: {
         window.addEventListener("resize", schedule);
         return () => { cancelAnimationFrame(frame); window.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); };
     }, [text, lang, onOutline, math]);
-    const markdown = useMemo(() => <Markdown skipHtml remarkPlugins={needsMath && math ? [remarkGfm, math.remarkMath] : [remarkGfm]} rehypePlugins={needsMath && math ? [[math.rehypeKatex, { trust: false, strict: "ignore" }]] : []} components={{
+    const markdown = useMemo(() => <Markdown skipHtml remarkPlugins={needsMath && math ? [remarkGfm, codeMetadata, math.remarkMath] : [remarkGfm, codeMetadata]} rehypePlugins={needsMath && math ? [[math.rehypeKatex, { trust: false, strict: "ignore" }]] : []} components={{
         img: ({ src, alt }) => <img src={owner && src?.startsWith("/media/") ? "/api/owner" + src : src} alt={alt || ""} loading="lazy" decoding="async" />,
         h1: ({ children }) => <h2>{children}</h2>,
         a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>,
         table: ({ children }) => <div className="prose-table" role="region" aria-label={lang === "zh" ? "操作与用法表格" : "Reference table"} tabIndex={0}><table>{children}</table></div>,
         pre: ({ children }) => {
             const child = Children.toArray(children)[0];
-            if (!isValidElement<{ children?: ReactNode; className?: string }>(child)) return <pre>{children}</pre>;
+            if (!isValidElement<{ children?: ReactNode; className?: string; "data-code-meta"?: string }>(child)) return <pre>{children}</pre>;
             const language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "text";
-            return <CodeBlock code={String(child.props.children || "").replace(/\n$/, "")} language={language} lang={lang} />;
+            return <CodeBlock code={String(child.props.children || "").replace(/\n$/, "")} language={language} meta={child.props["data-code-meta"] || ""} lang={lang} />;
         },
     }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math, owner]);
     return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" ref={content}>{markdown}</div></>;

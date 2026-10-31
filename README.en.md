@@ -50,6 +50,10 @@ Lists use a lightweight index; article bodies load separately, and full-text sea
 
 The owner workspace provides private autosaved editing copies, browser recovery, image upload/paste/drop, generated excerpts, and estimated reading time. Changes go public only when explicitly published. Installation sets up daily backups of SQLite, authentication configuration, and images, with checksum and restoration checks. See the [owner guide](self-hosted/OWNER.md) and [backup and restore guide](self-hosted/BACKUP.md).
 
+## Learning series, interactive examples, and code reading
+
+`/series` groups published chapters into ordered learning paths, including the existing C++ STL introduction. The owner workspace edits series titles, descriptions, slugs, and chapter order. Each article can attach one HTML/CSS/JavaScript example, run only after the reader clicks Run in an isolated preview. Reader edits stay local. Code blocks support on-demand syntax highlighting, optional line numbers, folding, and highlighted lines such as `{2,4-6}`; copying preserves the complete original code. See the [owner guide](self-hosted/OWNER.md).
+
 ## Edit content
 
 | Content | File or directory |
@@ -96,6 +100,7 @@ npm test
 npm run test:ratings
 npm run test:owner
 npm run test:improvements
+npm run test:learning
 ```
 
 Build the project before running `npm test`. It checks public APIs, certificates, private-data isolation, and read-only restrictions. With Nginx installed, run `NGINX_BIN=/path/to/nginx npm run test:nginx` to check the reverse proxy script.

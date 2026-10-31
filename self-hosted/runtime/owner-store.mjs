@@ -100,6 +100,26 @@ export function openStore(directory, bundled) {
         if (!Array.isArray(value.tags) || value.tags.length > 20 || value.tags.some(tag => typeof tag !== 'string' || !tag.trim() || tag.length > 40)) throw failure('标签格式不正确。');
         if (!Number.isInteger(value.read) || value.read < 1 || value.read > 10000) throw failure('阅读时长需要是 1～10000 的整数。');
         if (value.section !== undefined && value.section !== 'competitions') throw failure('文章分区不正确。');
+        if (value.series !== undefined) {
+            const series = value.series;
+            if (!series || typeof series !== 'object' || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(series.id || '') || !Number.isInteger(series.order) || series.order < 1 || series.order > 10000) throw failure('系列地址或章节顺序不正确。');
+            const result = { id: series.id, order: series.order };
+            for (const [key, limit] of Object.entries({ title: 120, enTitle: 120, description: 2000, enDescription: 2000 })) {
+                if (typeof (series[key] ?? '') !== 'string' || (series[key] || '').length > limit) throw failure('系列字段格式不正确。');
+                result[key] = series[key] || '';
+            }
+            if (value.visibility === 'public' && !result.title.trim()) throw failure('发布前请填写系列标题。');
+            entry.series = result;
+        }
+        if (value.playground !== undefined) {
+            const playground = value.playground;
+            if (!playground || typeof playground !== 'object') throw failure('在线示例格式不正确。');
+            entry.playground = {};
+            for (const key of ['html', 'css', 'js']) {
+                if (typeof (playground[key] ?? '') !== 'string' || (playground[key] || '').length > 50000) throw failure('在线示例每种语言不能超过 50000 字符。');
+                entry.playground[key] = playground[key] || '';
+            }
+        }
         return { ...entry, kind: value.kind, visibility: value.visibility, tags: [...new Set(value.tags)], read: value.read, ...(value.section ? { section: value.section } : {}) };
     }
     function write(id, payload, revision, remove = false, create = false, restore = false) {

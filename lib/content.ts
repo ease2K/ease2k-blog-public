@@ -1,3 +1,4 @@
+import type { SeriesInfo } from "./series";
 import journal from "./journal.json" with { type: "json" };
 import tutorials from "./tutorials.json" with { type: "json" };
 
@@ -17,6 +18,8 @@ export type Entry = {
     hasBody?: boolean;
     visibility?: "public" | "private";
     section?: "competitions";
+    series?: SeriesInfo;
+    playground?: { html: string; css: string; js: string };
 };
 
 export const profiles = {

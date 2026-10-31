@@ -54,6 +54,10 @@ npm start
 
 工作台支持自动编辑草稿及浏览器恢复副本、图片上传/粘贴/拖放、自动摘要与阅读时长。发布文章仍需手动点击确认。安装时同时配置每日自动备份，包含数据库、站主配置和图片，并验证恢复。详见 [工作台说明](self-hosted/OWNER.md) 和 [备份恢复说明](self-hosted/BACKUP.md)。
 
+## 学习专栏、交互示例和代码阅读
+
+`/series` 展示按顺序阅读的系列，已有 C++ STL 入门专栏。后台可设置系列标题、介绍、地址及章节顺序，公开目录只包含已发布章节。文章可附加一组 HTML、CSS、JavaScript 在线示例，读者点击运行后在隔离预览中交互；编辑内容不会改写原文章。代码块支持按需语法高亮、行号、长代码折叠及 `{2,4-6}` 重点行，复制保留完整原始代码。具体写法见 [站主说明](self-hosted/OWNER.md)。
+
 ## 修改内容
 
 | 内容 | 文件或目录 |
@@ -94,6 +98,7 @@ npm test
 npm run test:ratings
 npm run test:owner
 npm run test:improvements
+npm run test:learning
 ```
 
 `npm test` 需要先执行构建；测试公开接口、证书、私密内容隔离和只读限制。安装 Nginx 后，可用 `NGINX_BIN=/path/to/nginx npm run test:nginx` 检查反向代理脚本。

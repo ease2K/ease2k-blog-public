@@ -9,6 +9,14 @@
             "vector"
         ],
         "summary": "从冒泡、选择和插入排序开始，整理 sort、自定义比较与 vector 排序。",
+        "series": {
+            "id": "cpp-stl-introduction",
+            "title": "C++ STL 入门",
+            "enTitle": "Getting started with C++ STL",
+            "description": "从排序、栈和队列到优先队列，循序整理常用 STL 工具的原理、操作和练习。",
+            "enDescription": "Learn sorting, stacks, queues, and priority queues through explanations and practice.",
+            "order": 1
+        },
         "kind": "article",
         "section": "competitions",
         "title": "C++ sort 入门：从传统排序到自定义排序",
@@ -28,6 +36,14 @@
             "queue"
         ],
         "summary": "理解后进先出和先进先出，掌握标准库操作与数组、vector 模拟。",
+        "series": {
+            "id": "cpp-stl-introduction",
+            "title": "C++ STL 入门",
+            "enTitle": "Getting started with C++ STL",
+            "description": "从排序、栈和队列到优先队列，循序整理常用 STL 工具的原理、操作和练习。",
+            "enDescription": "Learn sorting, stacks, queues, and priority queues through explanations and practice.",
+            "order": 2
+        },
         "kind": "article",
         "section": "competitions",
         "title": "C++ 栈（stack）和队列（queue）入门",
@@ -46,6 +62,14 @@
             "priority_queue"
         ],
         "summary": "从大小根堆到结构体比较，整理优先队列的常用操作、应用与易错点。",
+        "series": {
+            "id": "cpp-stl-introduction",
+            "title": "C++ STL 入门",
+            "enTitle": "Getting started with C++ STL",
+            "description": "从排序、栈和队列到优先队列，循序整理常用 STL 工具的原理、操作和练习。",
+            "enDescription": "Learn sorting, stacks, queues, and priority queues through explanations and practice.",
+            "order": 3
+        },
         "kind": "article",
         "section": "competitions",
         "title": "C++ 优先队列（priority_queue）入门",
