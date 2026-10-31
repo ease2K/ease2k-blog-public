@@ -130,4 +130,4 @@ The owner workspace supports Chineseâ€“English translation using desktop Chromeâ
 
 ## Owner entrance
 
-The footer nickname opens the local owner workspace in a new tab while its SSH tunnel is connected. An optional 30-day remember-device checkbox complements the default eight-hour session; logout and password reset revoke the corresponding sessions. Public owner access remains disabled. See the [owner guide](self-hosted/OWNER.md).
+The footer nickname opens the owner workspace. With HTTPS configured, editing works online without a local SSH tunnel. Login offers an optional 30-day remembered device, with password checks, CSRF protection, logout revocation, and isolated private drafts. See the [owner guide](self-hosted/OWNER.md).

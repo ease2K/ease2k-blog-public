@@ -20,7 +20,8 @@
     "test:improvements": "node self-hosted/test-improvements.mjs",
     "test:learning": "node self-hosted/test-learning.mjs",
     "test:publishing": "node self-hosted/test-publishing.mjs",
-    "test:translation": "node self-hosted/test-translation.mjs"
+    "test:translation": "node self-hosted/test-translation.mjs",
+    "test:owner-https": "node self-hosted/test-owner-https.mjs"
   },
   "dependencies": {
     "highlight.js": "^11.12.0",

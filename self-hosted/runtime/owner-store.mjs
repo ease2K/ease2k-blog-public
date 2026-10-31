@@ -65,10 +65,10 @@ export function openStore(directory, bundled) {
     function publicEntries() {
         return all().filter(entry => entry.visibility !== 'private').map(({ revision, updatedAt, publishedAt, ...entry }) => entry);
     }
-    function session(req) {
+    function session(req, secure = false) {
         const config = owner();
         if (!config) return null;
-        const cookie = /(?:^|;\s*)ease_owner=([A-Za-z0-9_-]{43})(?:;|$)/.exec(req.headers.cookie || '')?.[1];
+        const cookie = new RegExp('(?:^|;\\s*)' + (secure ? '__Host-ease_owner' : 'ease_owner') + '=([A-Za-z0-9_-]{43})(?:;|$)').exec(req.headers.cookie || '')?.[1];
         if (!cookie) return null;
         const row = db.prepare('SELECT * FROM sessions WHERE hash=? AND version=? AND expires>?').get(digest(cookie), config.version, Date.now());
         return row ? { hash: row.hash, csrf: createHmac('sha256', config.secret).update(cookie).digest('base64url') } : null;

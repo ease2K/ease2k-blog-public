@@ -62,7 +62,7 @@ journalctl -u ease2k-blog -n 30 --no-pager
 
 服务仅监听本机 3000，默认 BLOG_ORIGIN 为 http://localhost:3000，与当前 Nginx 转发 Host 一致。首次建立 IP 入口可运行包内 `bash configure-ip-preview.sh YOUR_SERVER_IP`，该脚本会检查与备份 Nginx 配置，失败时回退。域名入口使用源码中的 `bash self-hosted/deploy/configure-domain.sh example.com`，将 `example.com` 替换成自己的根域名。
 
-备案完成后配置域名解析和 HTTPS，调整 Nginx 的域名入口即可；站主工作台当前仍通过 SSH 隧道访问。中国内地服务器通过公网 IP 提供网站服务同样适用备案要求。
+备案完成后配置域名解析和 HTTPS，调整 Nginx 的域名入口即可；站主工作台可按 [站主说明](OWNER.md) 配置 HTTPS 在线访问，SSH 保留为备用维护方式。中国内地服务器通过公网 IP 提供网站服务同样适用备案要求。
 
 ## 竞赛与 Rating
 

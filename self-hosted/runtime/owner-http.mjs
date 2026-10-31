@@ -14,21 +14,32 @@ async function body(req) {
     }
     try { return JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw failure('JSON 格式不正确。'); }
 }
-export function ownerRequest(req) {
+function ownerAccess(req) {
+    if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return null;
     let host;
-    try { host = new URL('http://' + req.headers.host).hostname; } catch { return false; }
-    return ['localhost', '127.0.0.1', '[::1]'].includes(host)
-        && ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress)
-        && !['forwarded', 'x-forwarded-for', 'x-real-ip', 'x-forwarded-host', 'x-forwarded-proto'].some(name => req.headers[name]);
+    try { host = new URL('http://' + req.headers.host).hostname; } catch { return null; }
+    if (!['localhost', '127.0.0.1', '[::1]'].includes(host)) return null;
+    const secret = process.env.BLOG_OWNER_PROXY_SECRET || '';
+    if (/^[a-f0-9]{64}$/.test(secret) && equal(req.headers['x-ease2k-owner-proxy'], secret)) {
+        try {
+            const origin = new URL(process.env.BLOG_OWNER_PUBLIC_ORIGIN);
+            if (origin.protocol === 'https:' && !origin.username && !origin.password && req.headers['x-forwarded-proto'] === 'https' && req.headers['x-forwarded-host'] === origin.host && !req.headers.forwarded) return { origin: origin.origin, secure: true };
+        } catch {}
+        return null;
+    }
+    if (['forwarded', 'x-forwarded-for', 'x-real-ip', 'x-forwarded-host', 'x-forwarded-proto', 'x-ease2k-owner-proxy'].some(name => req.headers[name])) return null;
+    return { origin: process.env.BLOG_OWNER_ORIGIN || 'http://' + req.headers.host, secure: false };
 }
-const cookie = (token, age = 8 * 60 * 60) => `ease_owner=${token}; HttpOnly; SameSite=Strict; Path=/api/owner; Max-Age=${age}`;
+export function ownerRequest(req) { return !!ownerAccess(req); }
+const cookie = (token, age = 8 * 60 * 60, secure = false) => `${secure ? '__Host-ease_owner' : 'ease_owner'}=${token}; HttpOnly; SameSite=Strict; Path=${secure ? '/' : '/api/owner'}; Max-Age=${age}${secure ? '; Secure' : ''}`;
 export async function handleOwner(req, res, pathname, store, root, json, directory, registry, resources) {
     const portal = pathname === '/_owner' || pathname.startsWith('/_owner/');
     const api = pathname === '/api/owner' || pathname.startsWith('/api/owner/');
     if (!portal && !api && pathname !== '/owner.html') return false;
     res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
     res.setHeader('Cache-Control', 'no-store');
-    if (!ownerRequest(req) || pathname === '/owner.html') { json(res, { error: '页面不存在' }, 404); return true; }
+    const access = ownerAccess(req);
+    if (!access || pathname === '/owner.html') { json(res, { error: '页面不存在' }, 404); return true; }
     if (portal) {
         if (!['GET', 'HEAD'].includes(req.method)) { json(res, { error: '不支持此请求方法' }, 405); return true; }
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -37,9 +48,9 @@ export async function handleOwner(req, res, pathname, store, root, json, directo
         return true;
     }
     try {
-        const auth = store.session(req);
+        const auth = store.session(req, access.secure);
         if (!['GET', 'HEAD'].includes(req.method)) {
-            const expected = process.env.BLOG_OWNER_ORIGIN || 'http://' + req.headers.host;
+            const expected = access.origin;
             if (req.headers.origin !== expected || req.headers['sec-fetch-site'] === 'cross-site') throw failure('请求来源不正确，请从站主入口重新打开。', 403);
             if (pathname !== '/api/owner/login' && (!auth || !equal(req.headers['x-csrf-token'], auth.csrf))) throw failure('登录已过期或请求校验失败，请重新登录。', auth ? 403 : 401);
         }
@@ -47,12 +58,12 @@ export async function handleOwner(req, res, pathname, store, root, json, directo
             json(res, { configured: !!store.owner(), authenticated: !!auth, ...(auth ? { csrf: auth.csrf } : {}) });
         } else if (pathname === '/api/owner/login' && req.method === 'POST') {
             const value = await body(req), remember = value.remember === true, token = await store.login(value.password, remember);
-            res.setHeader('Set-Cookie', cookie(token, (remember ? 30 * 24 : 8) * 60 * 60));
+            res.setHeader('Set-Cookie', cookie(token, (remember ? 30 * 24 : 8) * 60 * 60, access.secure));
             json(res, { ok: true });
         } else {
             if (!auth) throw failure('请先登录。', 401);
             if (pathname === '/api/owner/logout' && req.method === 'POST') {
-                store.logout(auth); res.setHeader('Set-Cookie', cookie('', 0)); json(res, { ok: true });
+                store.logout(auth); res.setHeader('Set-Cookie', cookie('', 0, access.secure)); json(res, { ok: true });
             } else if (pathname === '/api/owner/entries' && req.method === 'GET') {
                 json(res, { entries: store.all(), trash: store.trash(), drafts: store.drafts(), series: registry.list() });
             } else if (pathname === '/api/owner/export' && req.method === 'GET') {
