@@ -4,6 +4,7 @@ import Body, { preloadBody } from "@/components/article-body";
 import Ratings from "@/components/ratings";
 import ArticleToc, { type Heading, type OutlineHandler } from "@/components/article-toc";
 import { profiles, portals, authoredProblems, awards, orderedAwards, sections, inSection, type Entry } from "@/lib/content";
+import { tagKey, tagName as translatedTagName } from "@/lib/tags";
 
 type Lang = "zh" | "en";
 type View = { entries: Entry[]; ready: boolean };
@@ -42,10 +43,6 @@ function certificateThumbnail(value?: string, width = 480) {
     return value ? certificateUrl(value.replace(/\/([^/]+)\.(?:jpg|png)$/i, "/thumbnails/$1-" + width + ".webp")) : undefined;
 }
 
-const tagNames: Record<string, string> = {
-    "算法": "Algorithms", "二分": "Binary search", "图论": "Graphs", "语言基础": "Language basics",
-    "站点说明": "Site notes", "个人网站": "Personal website", "生活": "Life",
-};
 function entryId(path: string) {
     try { return decodeURIComponent(path.split("/")[2] || ""); } catch { return ""; }
 }
@@ -60,7 +57,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
     const main = useRef<HTMLElement>(null), focusPage = useRef(false), requestId = useRef(0);
     const t = (zh: string, en: string) => lang === "zh" ? zh : en;
     const name = (key: string) => names[key]?.[lang === "zh" ? 0 : 1] || key;
-    const tagName = (value: string) => lang === "en" ? tagNames[value] || value : value;
+    const tagName = (value: string | undefined) => translatedTagName(value, lang);
     const active = path === "/" ? "home" : path.split("/")[1];
     const selected = active === "entry" ? data.entries.find(e => e.id === entryId(path) && e.body.trim()) : null;
     const [outline, setOutline] = useState<{ entry: string; headings: Heading[]; activeId: string }>({ entry: "", headings: [], activeId: "" });
@@ -131,7 +128,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
         return <a key={href + "|" + className} href={href} className={className} onPointerEnter={() => { if (href.startsWith("/entry/")) preloadBody(); }} onFocus={() => { if (href.startsWith("/entry/")) preloadBody(); }} aria-label={className === "entry-open" ? t("查看详情", "Read entry") : undefined} aria-current={href === path || (className.startsWith("nav-link") && href === link(activeNav)) ? "page" : undefined} onClick={e => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return; e.preventDefault(); go(href); }}>{children}</a>;
     }
     function tags(e: Entry) {
-        return <div className="tags">{e.tags.map(v => <span key={v}>{tagName(v)}</span>)}{e.sample && <span className="sample">{t("示例文章", "Sample")}</span>}</div>;
+        return <div className="tags">{[...new Set(e.tags.map(tagKey))].map(v => <span key={v}>{tagName(v)}</span>)}{e.sample && <span className="sample">{t("示例文章", "Sample")}</span>}</div>;
     }
     function row(e: Entry) {
         return <article className={"entry-row " + (e.kind === "daily" ? "journal-row" : "")} key={e.id} data-entry={e.id}>
@@ -162,7 +159,7 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
             <div className="side-note"><span className="tiny-blue-dot" /><p>{t("这里记录生活，也记录从不懂到想明白的过程。", "Notes on everyday life, and the journey from questions to understanding.")}</p></div>
         </aside>;
     }
-    const searchResults = search.trim() ? list.filter(e => ([e.title, e.enTitle, e.summary, e.enSummary, e.body, e.enBody, ...e.tags, ...e.tags.map(tagName)].join(" ")).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) : [];
+    const searchResults = search.trim() ? list.filter(e => ([e.title, e.enTitle, e.summary, e.enSummary, e.body, e.enBody, ...e.tags, ...e.tags.map(tagKey), ...e.tags.map(value => translatedTagName(value, "en"))].join(" ")).toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())) : [];
 
     return <div className={"site" + (active === "home" ? " site-home" : "")}>{active === "home" && <div className="home-wallpaper" aria-hidden="true" />}<a className="skip-link" href="#main">{t("跳到正文", "Skip to content")}</a>
         <header className="site-header"><div className="identity-bar wrap">
@@ -180,8 +177,8 @@ export default function Blog({ initialPath = "/" }: { initialPath?: string }) {
             {([...sections, "cpp"] as string[]).includes(active) && <>
                 <div className="page-heading"><div><span className="page-kicker">{t("个人手记", "Personal notes")}</span><h1>{name(active)}</h1><p>{active === "daily" ? t("收集生活里的片段，也留住偶然的想法。", "Small moments, passing thoughts, and things worth keeping.") : active === "articles" ? t("汇总日常、学习与项目中的所有文章。", "All my writing, from everyday notes to learning and projects.") : t("从一个问题开始，慢慢整理成自己的理解。", "Questions, practice, and a growing understanding.")}</p></div></div>
                 {active === "projects" && profileButtons("github")}
-                <div className="filter-bar"><div className="filter-chips">{["all", ...new Set(list.filter(e => inSection(e, active)).flatMap(e => e.tags))].map(value => <button key={value} className={tag === value ? "selected" : ""} aria-pressed={tag === value} onClick={() => setTag(value)}>{value === "all" ? t("全部", "All") : tagName(value)}</button>)}</div>{active === "daily" && <select aria-label={t("按月份筛选", "Filter by month")} value={month} onChange={e => setMonth(e.target.value)}><option value="all">{t("所有月份", "All months")}</option>{[...new Set(list.filter(e => e.kind === "daily").map(e => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date))))].map(value => <option key={value}>{value}</option>)}</select>}</div>
-                {(() => { const items = list.filter(e => inSection(e, active) && (tag === "all" || e.tags.includes(tag)) && (month === "all" || new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date)) === month)); return items.length ? <div className="entry-list full-list">{items.map(row)}</div> : <div className="empty-state"><NotebookPen /><h2>{t("这里还没有记录", "Nothing here yet")}</h2><p>{t("换个筛选条件，或稍后再来看看。", "Try another filter, or check back later.")}</p><button className="secondary-button" onClick={() => { setTag("all"); setMonth("all"); }}>{t("重置筛选", "Reset filters")}</button></div>; })()}
+                <div className="filter-bar"><div className="filter-chips">{["all", ...new Set(list.filter(e => inSection(e, active)).flatMap(e => e.tags.map(tagKey)))].map(value => <button key={value} className={tag === value ? "selected" : ""} aria-pressed={tag === value} onClick={() => setTag(value)}>{value === "all" ? t("全部", "All") : tagName(value)}</button>)}</div>{active === "daily" && <select aria-label={t("按月份筛选", "Filter by month")} value={month} onChange={e => setMonth(e.target.value)}><option value="all">{t("所有月份", "All months")}</option>{[...new Set(list.filter(e => e.kind === "daily").map(e => new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date))))].map(value => <option key={value}>{value}</option>)}</select>}</div>
+                {(() => { const items = list.filter(e => inSection(e, active) && (tag === "all" || e.tags.some(value => tagKey(value) === tag)) && (month === "all" || new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit" }).format(new Date(e.date)) === month)); return items.length ? <div className="entry-list full-list">{items.map(row)}</div> : <div className="empty-state"><NotebookPen /><h2>{t("这里还没有记录", "Nothing here yet")}</h2><p>{t("换个筛选条件，或稍后再来看看。", "Try another filter, or check back later.")}</p><button className="secondary-button" onClick={() => { setTag("all"); setMonth("all"); }}>{t("重置筛选", "Reset filters")}</button></div>; })()}
             </>}
 
             {active === "entry" && (selected ? <article className="detail"><button className="back-link" onClick={() => go(returnPath || (selected.section === "competitions" ? "/competitions" : "/" + (selected.kind === "daily" ? "daily" : selected.kind === "project" ? "projects" : "articles")))}><ArrowLeft size={15} />{returnPath?.startsWith("/competitions") || (!returnPath && selected.section === "competitions") ? t("返回竞赛", "Back to contests") : t("返回列表", "Back to entries")}</button>{tags(selected)}<h1>{title(selected)}</h1><p className="detail-summary">{summary(selected)}</p><div className="detail-meta article-meta"><span><CalendarDays size={14} aria-hidden="true" />{t("发布于", "Published")}<time dateTime={selected.date}>{published(selected.date)}</time><small>{t("北京时间", "UTC+8")}</small></span><span><Clock3 size={14} aria-hidden="true" />{selected.read} {t("分钟阅读", "min read")}</span></div>{lang === "en" && !selected.enBody && <p className="language-note">This entry is available in Chinese.</p>}<Body text={lang === "en" && selected.enBody ? selected.enBody : selected.body} lang={lang} onOutline={updateOutline} />{selected.kind === "project" && profileButtons("github")}<div className="article-end"><span /><span>{t("感谢阅读", "Thanks for reading")}</span><span /></div></article> : loading ? <div className="empty-state loading-state" role="status" aria-busy="true"><h1>{t("正在加载记录…", "Loading your note…")}</h1></div> : !data.ready ? <div className="empty-state"><NotebookPen /><h1>{t("暂时无法加载这条记录", "Could not load this entry")}</h1><p>{t("请检查网络连接，再点击上方重新加载。", "Check your connection and use Retry above.")}</p></div> : <div className="empty-state"><BookOpen /><h1>{t("记录暂不可见", "Entry unavailable")}</h1><p>{t("记录可能已删除，或地址有误。", "The entry may have been removed, or the address may be incorrect.")}</p><button className="secondary-button" onClick={() => go("/")}>{t("回到首页", "Go home")}</button></div>)}
