@@ -1,9 +1,8 @@
 import { DatabaseSync } from 'node:sqlite';
-import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, rmSync, existsSync, mkdtempSync, realpathSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync, copyFileSync, statSync, chmodSync, rmSync, existsSync, mkdtempSync } from 'node:fs';
 import { resolve, relative, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { createHash, randomUUID } from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 
 const hash = file => createHash('sha256').update(readFileSync(file)).digest('hex');
 function files(root, at = root) {
@@ -60,11 +59,4 @@ export function createBackup(source, destination, keep = 14) {
     const old = readdirSync(destination).filter(name => /^\d{4}-\d\d-\d\dT/.test(name) && statSync(resolve(destination, name)).isDirectory() && existsSync(resolve(destination, name, 'manifest.json'))).sort().reverse();
     for (const name of old.slice(Math.max(1, keep))) rmSync(resolve(destination, name), { recursive: true });
     return { directory: target, verified: true, restorationTest: true, ...verified };
-}
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-    const [command, source, destination] = process.argv.slice(2);
-    try {
-        if (!source || !['create', 'verify', 'restore'].includes(command) || command !== 'verify' && !destination) throw Error('用法：node backup.mjs create 数据目录 备份目录 | verify 备份目录 | restore 备份目录 空目标目录');
-        console.log(JSON.stringify(command === 'create' ? createBackup(resolve(source), resolve(destination)) : command === 'verify' ? verifyBackup(resolve(source)) : restoreBackup(resolve(source), resolve(destination))));
-    } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

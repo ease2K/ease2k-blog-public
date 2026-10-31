@@ -17,7 +17,7 @@ journalctl -u ease2k-blog-backup.service -n 20 --no-pager
 也可以直接运行：
 
 ```bash
-node /opt/ease2k-blog/current/backup.mjs create /var/lib/ease2k-blog/editor /var/backups/ease2k-blog
+node /opt/ease2k-blog/current/backup-cli.mjs create /var/lib/ease2k-blog/editor /var/backups/ease2k-blog
 ```
 
 成功结果包含 `verified: true`、`restorationTest: true` 和备份目录。失败任务会返回非零状态，日志可通过上述 journalctl 命令查看。
@@ -28,10 +28,10 @@ node /opt/ease2k-blog/current/backup.mjs create /var/lib/ease2k-blog/editor /var
 
 ```bash
 blog_snapshot=/var/backups/ease2k-blog/REPLACE_WITH_SNAPSHOT
-node /opt/ease2k-blog/current/backup.mjs verify "$blog_snapshot"
+node /opt/ease2k-blog/current/backup-cli.mjs verify "$blog_snapshot"
 systemctl stop ease2k-blog
 mv /var/lib/ease2k-blog/editor "/var/lib/ease2k-blog/editor-before-restore-$(date +%Y%m%d%H%M%S)"
-node /opt/ease2k-blog/current/backup.mjs restore "$blog_snapshot" /var/lib/ease2k-blog/editor
+node /opt/ease2k-blog/current/backup-cli.mjs restore "$blog_snapshot" /var/lib/ease2k-blog/editor
 chown -R easeblog:easeblog /var/lib/ease2k-blog/editor
 systemctl start ease2k-blog
 curl --fail http://localhost:3000/healthz

@@ -11,7 +11,7 @@ rmSync(resolve(here, 'build'), { recursive: true, force: true });
 await build({ configFile: resolve(here, 'vite.config.mjs') });
 await sharp(resolve(here, '../public/share-card.svg')).png().toFile(resolve(here, 'build/client/share-card.png'));
 await build({ configFile: false, publicDir: false, plugins: [], resolve: { alias: { '@': resolve(here, '..') } }, ssr: { noExternal: true }, build: { ssr: resolve(here, 'render.tsx'), outDir: resolve(here, 'build/ssr'), emptyOutDir: true, rolldownOptions: { output: { entryFileNames: 'render.mjs', chunkFileNames: 'assets/[name]-[hash].mjs' } } } });
-for (const name of ['server.mjs', 'owner-store.mjs', 'owner-http.mjs', 'setup-owner.mjs', 'media.mjs', 'public-pages.mjs', 'backup.mjs']) cpSync(resolve(here, 'runtime', name), resolve(here, 'build', name));
+for (const name of ['server.mjs', 'owner-store.mjs', 'owner-http.mjs', 'setup-owner.mjs', 'media.mjs', 'public-pages.mjs', 'backup.mjs', 'backup-cli.mjs']) cpSync(resolve(here, 'runtime', name), resolve(here, 'build', name));
 for (const name of ['writing', 'tags']) writeFileSync(resolve(here, 'build/' + name + '.mjs'), ts.transpileModule(readFileSync(resolve(here, '../lib/' + name + '.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
 writeFileSync(resolve(here, 'build/content.mjs'), ts.transpileModule(readFileSync(resolve(here, '../lib/content.ts'), 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext } }).outputText);
 cpSync(resolve(here, '../lib/ratings.mjs'), resolve(here, 'build/ratings.mjs'));
