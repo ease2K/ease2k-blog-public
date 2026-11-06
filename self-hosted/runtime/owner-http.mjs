@@ -99,7 +99,7 @@ export async function handleOwner(req, res, pathname, store, root, json, directo
                     json(res, { entry: store.write(id, { ...old, visibility: 'private' }, value.revision, false, false, true) });
                 } else if (!action && req.method === 'PUT') {
                     const value = await body(req);
-                    json(res, { entry: store.write(id, value.entry, value.revision, false, value.create === true) });
+                    json(res, { entry: store.write(id, value.entry, value.revision, false, value.create === true, false, false, value.recordUpdate === true) });
                 } else if (!action && req.method === 'DELETE') {
                     const value = await body(req);
                     store.write(id, null, value.revision, true);

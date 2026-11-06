@@ -26,7 +26,8 @@ const escape = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;
 const safeJSON = value => JSON.stringify(value).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
 export function sitemap(entries, origin) {
     const paths = ['/', '/about', '/subscribe', '/competitions', ...sections.filter(section => entries.some(entry => inSection(entry, section))).map(section => '/' + section), ...entries.map(entry => '/entry/' + entry.id), ...awards.map(award => '/award/' + award.id), '/series', ...seriesCatalog(entries).map(series => '/series/' + series.id)];
-    return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + [...new Set(paths)].map(path => '<url><loc>' + escape(origin + path) + '</loc></url>').join('') + '</urlset>';
+    const dates = new Map(entries.map(entry => ['/entry/' + entry.id, entry.modifiedAt || entry.date]));
+    return '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + [...new Set(paths)].map(path => '<url><loc>' + escape(origin + path) + '</loc>' + (dates.has(path) ? '<lastmod>' + escape(dates.get(path)) + '</lastmod>' : '') + '</url>').join('') + '</urlset>';
 }
 export async function page(req, pathname, store, root, origin) {
     const entries = visible(store), parts = pathname.split('/');
@@ -45,7 +46,7 @@ export async function page(req, pathname, store, root, origin) {
     source = source.replace(/<title>[\s\S]*?<\/title>/, '<title>' + escape(title) + '</title>').replace(/<meta name="description"[^>]*>/, '<meta name="description" content="' + escape(description) + '">');
     let head = '<link rel="alternate" type="application/rss+xml" title="ease2k RSS" href="' + escape(origin + (group ? '/feed/series/' + group.id + '.xml' : '/feed.xml')) + '"><link rel="canonical" href="' + escape(canonical) + '"><meta property="og:type" content="' + (entry ? 'article' : 'website') + '"><meta property="og:title" content="' + escape(title) + '"><meta property="og:description" content="' + escape(description) + '"><meta property="og:url" content="' + escape(canonical) + '"><meta property="og:image" content="' + escape(origin + '/share-card.png') + '"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image">';
     if (!valid) head += '<meta name="robots" content="noindex">';
-    if (entry) head += '<script type="application/ld+json">' + safeJSON({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: entry.title, description, datePublished: entry.date, author: { '@type': 'Person', name: 'ease2k', url: origin + '/about' }, mainEntityOfPage: canonical, inLanguage: lang === 'en' && entry.enBody ? 'en' : 'zh-CN' }) + '</script>';
+    if (entry) head += '<script type="application/ld+json">' + safeJSON({ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: entry.title, description, datePublished: entry.date, dateModified: entry.modifiedAt || entry.date, author: { '@type': 'Person', name: 'ease2k', url: origin + '/about' }, mainEntityOfPage: canonical, inLanguage: lang === 'en' && entry.enBody ? 'en' : 'zh-CN' }) + '</script>';
     source = source.replace('</head>', head + '</head>').replace('<div id="root"></div>', '<div id="root">' + (await render(pathname, initialData, entry, lang)) + '</div><script id="blog-bootstrap" type="application/json">' + safeJSON(initial) + '</script>');
     return { html: source, status: valid ? 200 : 404 };
 }

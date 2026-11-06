@@ -10,6 +10,6 @@ export function feed(entries, path, origin) {
         if (!group) return null;
         title = 'ease2k · ' + group.title; selected = group.chapters;
     }
-    const items = selected.filter(entry => entry.visibility !== 'private' && !entry.sample && entry.body.trim()).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50);
+    const items = selected.filter(entry => entry.visibility !== 'private' && !entry.sample && entry.body.trim()).sort((a, b) => (b.modifiedAt || b.date).localeCompare(a.modifiedAt || a.date)).slice(0, 50);
     return '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>' + xml(title) + '</title><link>' + xml(origin) + '</link><description>记录日常，分享学习与实践。</description><language>zh-CN</language><atom:link href="' + xml(origin + path) + '" rel="self" type="application/rss+xml"/>' + items.map(entry => '<item><title>' + xml(entry.title) + '</title><link>' + xml(origin + '/entry/' + entry.id) + '</link><guid isPermaLink="true">' + xml(origin + '/entry/' + entry.id) + '</guid><pubDate>' + new Date(entry.date).toUTCString() + '</pubDate><description>' + xml(entry.summary?.trim() && !['-', '—'].includes(entry.summary.trim()) ? entry.summary : excerpt(entry.body)) + '</description>' + entry.tags.map(tag => '<category>' + xml(tag) + '</category>').join('') + '</item>').join('') + '</channel></rss>';
 }

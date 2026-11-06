@@ -15,7 +15,7 @@ export function resourceStore(store, directory) {
     function referenceMap() {
         const refs = new Map();
         function collect(entry, kind, history = false) {
-            const text = (entry.body || '') + '\n' + (entry.enBody || '') + JSON.stringify(entry.playground || {});
+            const text = (entry.body || '') + '\n' + (entry.enBody || '') + JSON.stringify(entry.playground || {}) + JSON.stringify(entry.project || {});
             for (const name of new Set([...text.matchAll(/\/media\/([a-f0-9-]{36}\.webp)/g)].map(match => match[1]))) {
                 const values = refs.get(name) || [];
                 const previous = history && values.find(value => value.kind === 'history' && value.id === entry.id);
@@ -76,7 +76,7 @@ export function resourceStore(store, directory) {
             const rewrite = entry => JSON.parse(JSON.stringify(entry).split(from).join(to));
             const copies = store.drafts(); let changed = 0;
             for (const entry of store.all()) {
-                if (!(entry.body + entry.enBody + JSON.stringify(entry.playground || {})).includes(from)) continue;
+                if (!(entry.body + entry.enBody + JSON.stringify(entry.playground || {}) + JSON.stringify(entry.project || {})).includes(from)) continue;
                 store.write(entry.id, rewrite(entry), entry.revision, false, false, false, true); changed++;
             }
             for (const row of db.prepare('SELECT * FROM series').all()) {

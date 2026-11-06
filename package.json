@@ -20,12 +20,14 @@
     "test:improvements": "node self-hosted/test-improvements.mjs",
     "test:learning": "node self-hosted/test-learning.mjs",
     "test:publishing": "node self-hosted/test-publishing.mjs",
+    "test:experience": "node self-hosted/test-experience.mjs",
     "test:translation": "node self-hosted/test-translation.mjs",
     "test:owner-https": "node self-hosted/test-owner-https.mjs",
     "test:owner-http": "node self-hosted/test-owner-https.mjs --http"
   },
   "dependencies": {
     "highlight.js": "^11.12.0",
+    "hyperellipse": "1.0.5",
     "katex": "^0.19.1",
     "lucide-react": "^1.31.0",
     "react": "19.2.6",

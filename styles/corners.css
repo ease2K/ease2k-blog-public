@@ -1,0 +1,46 @@
+/* Keep each component's radius; only change how its corners meet the edges. */
+@property --corner-shape {
+    syntax: "*";
+    inherits: false;
+    initial-value: round;
+}
+
+:where(
+    button, input, textarea, select, dialog, kbd,
+    .view-all, .side-note, .site-home .site-footer, .skip-link,
+    .brand-icon, .theme-switch, .nav-link, .clock-banner,
+    .load-notice, .loading-state, .entry-list, .tags > span,
+    .project-feature, .mini-browser, .mini-blue, .project-orbit,
+    .profile-card, .avatar, .profile-link, .community-panel, .community-link,
+    .primary-button, .secondary-button, .empty-state, .detail, .code-block,
+    .language-note, .award-empty, .award-illustration,
+    .campus-portal-link, .campus-portal-icon, .contest-platforms a,
+    .interest-tags span, .search-result, .toast, .award-record, .award-photo,
+    .award-pinned, .certificate-link img, .authored-problem,
+    .prose :not(pre) > code, .prose-table, .prose img,
+    .rating-card, .article-toc, .article-toc a, .article-toc-mobile,
+    .article-toc-mobile a, .rating-history, .rating-history-tabs,
+    .topic-link, .article-neighbour, .playground, .article-search-bar,
+    .series-cover, .series-cover-thumb,
+    .owner-login-card, .owner-entry, .owner-preview,
+    .owner-error, .owner-success, .owner-notice, .owner-save-bar,
+    .owner-history, .owner-recovery, .owner-cover-preview,
+    .owner-media-item, .owner-media-preview, .owner-translation-preview,
+    .home-current, .project-card, .project-capture > span, .reading-progress,
+    .reading-tools, .article-correction[open], .owner-project-upload
+) {
+    corner-shape: superellipse(1.5);
+    --corner-shape: superellipse(1.5);
+}
+
+/* The fallback clips gradients and overflowing children without a shadow layer. */
+@supports not (corner-shape: superellipse(1.5)) {
+    .clock-banner, .brand-icon, .avatar, .entry-list, .mini-browser, dialog { box-shadow: none; }
+    dialog { background: var(--bg); }
+
+    /* Preserve the accent borders and native form-control focus indicators. */
+    .campus-portal-link, .award-record.is-pinned,
+    input:focus-visible, textarea:focus-visible, select:focus-visible {
+        --corner-shape: round;
+    }
+}

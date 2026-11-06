@@ -55,7 +55,7 @@ async function handle(req, res) {
         return entry ? json(res, { entry }) : json(res, { error: '记录暂不可见' }, 404);
     }
     if (pathname.startsWith('/media/')) {
-        if (visible(store).some(entry => ((entry.body + '\n' + entry.enBody + JSON.stringify(entry.playground || {})).includes(pathname) || entry.series?.cover === pathname)) && serveMedia(req, res, pathname.slice(7), directory, false)) return;
+        if (visible(store).some(entry => ((entry.body + '\n' + entry.enBody + JSON.stringify(entry.playground || {})).includes(pathname) || entry.series?.cover === pathname || entry.project?.screenshot === pathname)) && serveMedia(req, res, pathname.slice(7), directory, false)) return;
         return json(res, { error: '图片不存在' }, 404);
     }
     if (pathname === '/sitemap.xml' || pathname === '/robots.txt') {

@@ -22,6 +22,23 @@ export type Entry = {
     section?: "competitions";
     series?: SeriesInfo;
     playground?: { html: string; css: string; js: string };
+    featured?: boolean;
+    modifiedAt?: string;
+    updateNote?: string;
+    enUpdateNote?: string;
+    environment?: string;
+    project?: {
+        status: "active" | "complete" | "paused";
+        stack: string[];
+        problem: string;
+        enProblem?: string;
+        outcomes: string[];
+        enOutcomes?: string[];
+        screenshot?: string;
+        screenshotAlt?: string;
+        sourceUrl?: string;
+        demoUrl?: string;
+    };
 };
 
 export const profiles = {
@@ -114,7 +131,7 @@ export const orderedAwards = [...awards].sort((a, b) => Number(!!b.pinned) - Num
 
 export const entries: Entry[] = [
     ...journal as Entry[],
-    ...tutorials as Entry[],
+    ...(tutorials as Entry[]).map(entry => ({ ...entry, featured: ["cpp-sort-introduction", "cpp-stack-queue-introduction"].includes(entry.id) })),
     {
         id: "hello-journal", kind: "daily", title: "给日常留一个位置", enTitle: "A little room for everyday life",
         summary: "一些片段，一些没想完的事。长短不限，慢慢记录。", enSummary: "Small moments and unfinished thoughts. A place to keep them, at my own pace.",
@@ -125,9 +142,19 @@ export const entries: Entry[] = [
     {
         id: "personal-blog", kind: "project", title: "这个蓝色的个人站点", enTitle: "This little blue corner of the web",
         summary: "把日常、学习与项目放在一起，为持续记录留一个自己的地方。", enSummary: "A personal space for everyday notes, learning, and things I build.",
-        body: "这个站点围绕 eAs1nGG-_- / ease2k 的日常与技术记录设计。\n\n## 视觉与阅读\n\n主色来自 2026 红牛亮面蓝的网页适配方案。系统字体优先使用苹果设备原生字形，浅色与深色主题均可以独立切换。\n\n## 内容组织\n\n首页按日常、文章、项目、算法、Java、MySQL、HTML、CSS、JavaScript 排列，每部分最多展示三条，空分区隐藏。列表页显示该分类的全部有效内容。\n\n## 站外账号\n\n竞赛和关于我页面提供 Codeforces 与 AtCoder 入口，项目和关于我页面提供 GitHub 入口。",
-        enBody: "A personal site for eAs1nGG-_- / ease2k.\n\n## Design\n\nA glossy racing-blue palette, Apple system typography, and light and dark themes.\n\n## Content\n\nSections include everyday notes, writing, projects, algorithms, Java, MySQL, HTML, CSS, and JavaScript. The home page shows up to three entries per section and hides empty sections. Detail pages contain the full entry.",
+        body: "这个站点用于持续整理 ease2k 的日常、学习笔记和项目记录，目前仍在开发与维护。\n\n## 解决什么问题\n\n把分散的笔记、竞赛学习和项目过程放在自己的站点里，既方便回顾，也能向其他读者分享。\n\n## 阅读与内容组织\n\n首页用手动精选、最近更新和主题入口组织内容，避免同一篇记录在多个分类中反复出现。学习专栏支持章节目录、继续阅读和手动已读标记，阅读进度仅保存在当前浏览器。文章支持 Markdown、代码高亮、数学公式、目录定位和 RSS 订阅。\n\n## 编辑与发布\n\nReact 和 TypeScript 负责页面，Vite 构建，Node.js 提供接口，SQLite 保存在线文章和编辑草稿。工作台支持图片上传、编辑预览、历史版本、回收站和备份恢复。草稿与已发布正文分开保存，修改草稿不会自动公开。\n\n## 两个实现取舍\n\n连续圆角优先使用浏览器原生能力，兼容模式为尚不支持的浏览器补充轮廓。专栏进度先保存在本机，不要求访客注册账户。\n\n文章的首次发布时间保持不变。普通修订和自动保存不更新时间；只有站主明确记录实质更新并填写说明时，服务器才生成新的公开更新时间。\n\n## 源码与体验\n\n项目卡片提供本站对应的源码、在线入口和本地实际截图。后续改动会继续在这里整理。",
+        enBody: "A personal website for everyday writing, learning notes and projects. It is still in development.\n\n## Purpose\n\nKeep scattered notes and project work in one place that I can revisit and share.\n\n## Reading\n\nThe home page separates selected reading, recent updates and topic links without repeating full entries. Series offer chapter navigation, a resume action and manual completion markers stored in the current browser. Articles support Markdown, code, math, outlines and RSS.\n\n## Publishing\n\nReact and TypeScript render the pages, Vite builds them, and Node.js with SQLite stores articles and private working drafts. The owner workspace includes uploads, previews, revision history, a recycle bin and backup restoration. Saving a working draft does not publish it.\n\n## Tradeoffs\n\nContinuous corners use native browser rendering where available and an optional compatibility layer elsewhere. Reading progress stays local without requiring an account. Original publication dates are preserved; a public modification date is only recorded when the author explicitly marks a substantive update and provides a note.",
         date: "2026-10-27T09:00:00+08:00", tags: ["React", "TypeScript", "个人网站"], read: 2,
+        modifiedAt: "2026-11-06T05:16:25.718Z", updateNote: "补充首页、专栏进度和文章维护的本地实现说明及项目成果。", enUpdateNote: "Document the local homepage, reading progress and article maintenance improvements.",
+        project: {
+            status: "active", stack: ["React", "TypeScript", "Vite", "Node.js", "SQLite"],
+            problem: "把分散的学习笔记、日常和项目整理到自己的站点，并能持续编辑与发布。",
+            enProblem: "Bring learning notes, everyday writing and projects into one place that I can keep editing and publishing.",
+            outcomes: ["中英文阅读与深浅主题", "Markdown、代码和公式排版", "草稿、在线发布与备份恢复"],
+            enOutcomes: ["Chinese / English and light / dark themes", "Markdown, code and math rendering", "Drafts, online publishing and backup restoration"],
+            screenshot: "/projects/personal-blog.webp", screenshotAlt: "个人博客首页的本地实际截图",
+            sourceUrl: "https://github.com/ease2K/ease2k-blog-public", demoUrl: "/",
+        },
     },
 ];
 

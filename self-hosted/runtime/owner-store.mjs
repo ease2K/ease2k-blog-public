@@ -94,7 +94,7 @@ export function openStore(directory, bundled) {
     function validate(value) {
         if (!value || typeof value !== 'object' || Array.isArray(value)) throw failure('文章数据不正确。');
         const entry = {};
-        const limits = { id: 100, title: 240, enTitle: 240, summary: 2000, enSummary: 2000, body: 700000, enBody: 700000, date: 50 };
+        const limits = { id: 100, title: 240, enTitle: 240, summary: 2000, enSummary: 2000, body: 700000, enBody: 700000, date: 50, updateNote: 1000, enUpdateNote: 1000, environment: 300 };
         for (const [key, max] of Object.entries(limits)) {
             const text = value[key] ?? '';
             if (typeof text !== 'string' || text.length > max) throw failure('文章字段长度或格式不正确：' + key);
@@ -109,6 +109,31 @@ export function openStore(directory, bundled) {
         if (!Array.isArray(value.tags) || value.tags.length > 20 || value.tags.some(tag => typeof tag !== 'string' || !tag.trim() || tag.length > 40)) throw failure('标签格式不正确。');
         if (!Number.isInteger(value.read) || value.read < 1 || value.read > 10000) throw failure('阅读时长需要是 1～10000 的整数。');
         if (value.section !== undefined && value.section !== 'competitions') throw failure('文章分区不正确。');
+        if (value.featured !== undefined && typeof value.featured !== 'boolean') throw failure('精选设置不正确。');
+        entry.featured = value.featured === true;
+        if (value.project !== undefined && value.kind === 'project') {
+            const project = value.project;
+            if (!project || typeof project !== 'object' || Array.isArray(project) || !['active', 'complete', 'paused'].includes(project.status)) throw failure('项目状态不正确。');
+            entry.project = { status: project.status };
+            for (const [key, limit] of Object.entries({ problem: 2000, enProblem: 2000, screenshot: 500, screenshotAlt: 300, sourceUrl: 1000, demoUrl: 1000 })) {
+                const text = project[key] ?? '';
+                if (typeof text !== 'string' || text.length > limit) throw failure('项目字段格式或长度不正确：' + key);
+                entry.project[key] = text.trim();
+            }
+            for (const [key, limit] of Object.entries({ stack: 40, outcomes: 500, enOutcomes: 500 })) {
+                const values = project[key] ?? [];
+                if (!Array.isArray(values) || values.length > 20 || values.some(value => typeof value !== 'string' || value.length > limit)) throw failure('项目列表格式或长度不正确：' + key);
+                entry.project[key] = [...new Set(values.map(value => value.trim()).filter(Boolean))];
+            }
+            for (const key of ['sourceUrl', 'demoUrl']) {
+                const url = entry.project[key];
+                if (url && !/^\/(?!\/|\\)[^\s\\]*$/.test(url)) {
+                    try { if (!/^https?:$/.test(new URL(url).protocol) || new URL(url).username || new URL(url).password) throw Error(); }
+                    catch { throw failure('项目链接需要使用 HTTP(S) 地址或站内路径。'); }
+                }
+            }
+            if (entry.project.screenshot && !/^\/(?:media\/[a-f0-9-]{36}\.webp|projects\/[A-Za-z0-9_-]+\.(?:webp|png|jpg|jpeg|avif))$/.test(entry.project.screenshot)) throw failure('项目截图需要使用已上传图片或 /projects/ 下的图片。');
+        }
         if (value.series !== undefined) {
             const series = value.series;
             if (!series || typeof series !== 'object' || !/^[a-z0-9][a-z0-9-]{0,79}$/.test(series.id || '') || !Number.isInteger(series.order) || series.order < 1 || series.order > 10000) throw failure('系列地址或章节顺序不正确。');
@@ -132,7 +157,7 @@ export function openStore(directory, bundled) {
         for (const match of JSON.stringify(entry).matchAll(/\/media\/([a-f0-9-]{36}\.webp)/g)) if (db.prepare('SELECT deleted FROM media_assets WHERE name=?').get(match[1])?.deleted) throw failure('图片已在回收区，请先恢复。');
         return { ...entry, kind: value.kind, visibility: value.visibility, tags: [...new Set(value.tags)], read: value.read, ...(value.section ? { section: value.section } : {}) };
     }
-    function write(id, payload, revision, remove = false, create = false, restore = false, externalTransaction = false) {
+    function write(id, payload, revision, remove = false, create = false, restore = false, externalTransaction = false, recordUpdate = false) {
         if (!Number.isInteger(revision) || revision < 0) throw failure('版本号不正确。');
         if (!externalTransaction) db.exec('BEGIN IMMEDIATE');
         try {
@@ -145,6 +170,15 @@ export function openStore(directory, bundled) {
             const now = new Date().toISOString(), next = current + 1;
             const firstPublished = publishedAt(old) || (payload?.visibility === 'public' && !remove ? now : null);
             const entry = remove ? old : { ...validate({ ...payload, summary: payload?.summary?.trim() && !['-', '—'].includes(payload.summary.trim()) ? payload.summary : excerpt(payload?.body || ''), enSummary: payload?.enSummary?.trim() || excerpt(payload?.enBody || ''), read: readingMinutes(payload?.body || ''), date: firstPublished || old?.date || now }), publishedAt: firstPublished };
+            if (!remove) {
+                if (recordUpdate && entry.visibility === 'public' && publishedAt(old) && !restore && !externalTransaction) {
+                    if (!entry.updateNote.trim()) throw failure('记录实质更新时，请填写更新说明。');
+                    entry.modifiedAt = now;
+                } else {
+                    delete entry.updateNote; delete entry.enUpdateNote;
+                    for (const key of ['modifiedAt', 'updateNote', 'enUpdateNote']) if (old?.[key]) entry[key] = old[key];
+                }
+            }
             if (externalTransaction && !remove) { entry.summary = old.summary; entry.enSummary = old.enSummary; entry.read = old.read; }
             if (entry.id !== id) throw failure('文章 ID 不可更改。');
             if (!remove && entry.series) {
