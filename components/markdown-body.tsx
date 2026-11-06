@@ -66,5 +66,5 @@ export default function MarkdownBody({ text, lang, onOutline, owner = false, sea
             return <CodeBlock searchQuery={searchQuery} code={String(child.props.children || "").replace(/\n$/, "")} language={language} meta={child.props["data-code-meta"] || ""} lang={lang} />;
         },
     }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math, owner]);
-    return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" ref={content}>{markdown}</div></>;
+    return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" data-reading-ready={needsMath && !math && !mathFailed ? undefined : "true"} ref={content}>{markdown}</div></>;
 }

@@ -1,0 +1,23 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { runInNewContext } from 'node:vm';
+import ts from 'typescript';
+
+const module = { exports: {} };
+const source = ts.transpileModule(readFileSync('lib/reading.ts', 'utf8'), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+runInNewContext(source, { module, exports: module.exports, require: createRequire(import.meta.url) });
+const { parseReading } = module.exports;
+const legacy = { seriesId: 'cpp-stl-introduction', heading: 'section-3', headingText: '常用操作', completed: false, visitedAt: 100 };
+const parse = record => parseReading(JSON.stringify({ version: 1, entries: { article: record } })).article;
+assert.deepEqual(JSON.parse(JSON.stringify(parse(legacy))), legacy);
+const current = { ...legacy, position: .42, progress: .57, block: 12, blockText: '本段正文', offset: .6, lang: 'zh' };
+assert.deepEqual(JSON.parse(JSON.stringify(parse(current))), current);
+const invalid = parse({ ...legacy, position: -1, progress: 2, block: 1.5, blockText: 'x'.repeat(161), offset: '0.5', lang: 'unknown' });
+assert.deepEqual(JSON.parse(JSON.stringify(invalid)), legacy);
+assert.equal(parse({ ...legacy, heading: 'javascript:alert(1)' }), undefined);
+assert.equal(parse({ ...legacy, visitedAt: 'today' }), undefined);
+assert.equal(Object.keys(parseReading('{broken')).length, 0);
+assert.equal(Object.keys(parseReading(JSON.stringify({ version: 2, entries: { article: current } }))).length, 0);
+assert.equal(Object.keys(parseReading(JSON.stringify({ version: 1, entries: Object.fromEntries(Array.from({ length: 600 }, (_, index) => ['article-' + index, current])) }))).length, 500);
+console.log('PASS: legacy reading records, paragraph positions, bounded optional values, invalid records, corrupt storage and retention limit.');

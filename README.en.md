@@ -133,3 +133,7 @@ The owner workspace supports Chineseâ€“English translation using desktop Chromeâ
 ## Owner entrance
 
 The footer nickname opens the online owner workspace without a local SSH tunnel. Login offers an optional 30-day remembered device. HTTPS is supported by default; HTTP requires explicit acceptance of plaintext transmission and unavailable on-device translation. Password checks, CSRF, logout revocation and private drafts remain. See the [owner guide](self-hosted/OWNER.md).
+
+## Automatic reading progress
+
+Articles and series automatically save reading percentage and paragraph position in `ease2k:reading:v1`. Unfinished articles resume automatically; explicit anchors and search locations take priority. Completion is inferred after at least five seconds of visible reading and a 1.5-second pause with the article end in view. The homepage offers continued reading, and completed articles can be restarted. Progress stays in this browser, requires no account and does not sync between devices. Existing records remain compatible; unavailable storage falls back to this page session.

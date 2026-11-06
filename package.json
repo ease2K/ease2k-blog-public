@@ -21,6 +21,7 @@
     "test:learning": "node self-hosted/test-learning.mjs",
     "test:publishing": "node self-hosted/test-publishing.mjs",
     "test:experience": "node self-hosted/test-experience.mjs",
+    "test:reading": "node self-hosted/test-reading.mjs",
     "test:translation": "node self-hosted/test-translation.mjs",
     "test:owner-https": "node self-hosted/test-owner-https.mjs",
     "test:owner-domain": "node self-hosted/test-owner-domain-config.mjs && node self-hosted/test-owner-https.mjs --domain",

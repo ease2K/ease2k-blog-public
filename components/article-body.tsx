@@ -13,9 +13,9 @@ function plainText(text: string) {
     return !/[`*_~\[\]<>#$|\\&@]/.test(text)
         && !/(^|\n)(?:\s*(?:[-+]\s|\d+[.)]\s|[-=]{3,}\s*$)| {4}|\t)|https?:\/\/|www\./im.test(text);
 }
-function PlainBody({ text, onOutline }: Props) {
+function PlainBody({ text, onOutline, pending = false }: Props & { pending?: boolean }) {
     useEffect(() => { onOutline?.([], ""); }, [text, onOutline]);
-    return <div className="prose">{text.split(/\n[ \t]*\n/).filter(part => part.trim()).map((part, index) => <p key={index} style={{ whiteSpace: "pre-wrap" }}>{part}</p>)}</div>;
+    return <div className="prose" data-reading-ready={pending ? undefined : "true"}>{text.split(/\n[ \t]*\n/).filter(part => part.trim()).map((part, index) => <p key={index} style={{ whiteSpace: "pre-wrap" }}>{part}</p>)}</div>;
 }
 class BodyBoundary extends Component<Props & { children: React.ReactNode }, { failed: boolean }> {
     state = { failed: false };
@@ -30,5 +30,5 @@ class BodyBoundary extends Component<Props & { children: React.ReactNode }, { fa
 }
 export default function ArticleBody(props: Props) {
     if (plainText(props.text)) return <PlainBody {...props} />;
-    return <BodyBoundary {...props}><Suspense fallback={<PlainBody {...props} />}><MarkdownBody {...props} /></Suspense></BodyBoundary>;
+    return <BodyBoundary {...props}><Suspense fallback={<PlainBody {...props} pending />}><MarkdownBody {...props} /></Suspense></BodyBoundary>;
 }

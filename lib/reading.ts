@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type ReadingRecord = { seriesId: string; heading: string; headingText: string; completed: boolean; visitedAt: number };
+export type ReadingRecord = { seriesId: string; heading: string; headingText: string; completed: boolean; visitedAt: number; position?: number; progress?: number; block?: number; blockText?: string; offset?: number; lang?: "zh" | "en" };
 export type ReadingData = Record<string, ReadingRecord>;
 const key = "ease2k:reading:v1";
 export function parseReading(text: string | null): ReadingData {
@@ -11,7 +11,12 @@ export function parseReading(text: string | null): ReadingData {
         for (const [id, record] of Object.entries(value.entries).slice(-500)) {
             const item = record as Partial<ReadingRecord> | null;
             if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,99}$/.test(id) || !item || typeof item.seriesId !== "string" || item.seriesId.length > 80 || typeof item.heading !== "string" || !/^(?:section-\d+)?$/.test(item.heading) || typeof item.headingText !== "string" || item.headingText.length > 500 || typeof item.completed !== "boolean" || typeof item.visitedAt !== "number" || !Number.isFinite(item.visitedAt)) continue;
-            entries[id] = item as ReadingRecord;
+            const nextRecord: ReadingRecord = { seriesId: item.seriesId, heading: item.heading, headingText: item.headingText, completed: item.completed, visitedAt: item.visitedAt };
+            for (const name of ["position", "progress", "offset"] as const) if (typeof item[name] === "number" && Number.isFinite(item[name]) && item[name]! >= 0 && item[name]! <= 1) nextRecord[name] = item[name];
+            if (Number.isInteger(item.block) && item.block! >= 0 && item.block! < 100000) nextRecord.block = item.block;
+            if (typeof item.blockText === "string" && item.blockText.length <= 160) nextRecord.blockText = item.blockText;
+            if (item.lang === "zh" || item.lang === "en") nextRecord.lang = item.lang;
+            entries[id] = nextRecord;
         }
         return entries;
     } catch { return {}; }
