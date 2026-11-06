@@ -14,7 +14,8 @@ import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import { passwordHash } from './build/owner-store.mjs';
 import { ownerHTTPS, ownerHTTP } from './deploy/owner-nginx.mjs';
-const insecure = process.argv.includes('--http');
+const insecure = process.argv.includes('--http'), domain = process.argv.includes('--domain');
+const hostname = domain ? 'blog.example.test' : '127.0.0.1';
 
 const folder = await mkdtemp(resolve(tmpdir(), 'ease2k-owner-https-'));
 const password = randomBytes(24).toString('base64url'), secret = randomBytes(32).toString('hex');
@@ -22,9 +23,10 @@ const config = { version: randomUUID(), salt: randomBytes(16).toString('hex'), s
 config.hash = await passwordHash(password, config.salt);
 await writeFile(resolve(folder, 'owner.json'), JSON.stringify(config), { mode: 0o600 });
 async function availablePort() { const server = createServer(); server.listen(0, '127.0.0.1'); await once(server, 'listening'); const port = server.address().port; await new Promise(resolve => server.close(resolve)); return port; }
-const backendPort = await availablePort(), port = await availablePort(), origin = (insecure ? 'http' : 'https') + '://127.0.0.1:' + port;
+const backendPort = await availablePort(), port = await availablePort(), origin = (insecure ? 'http' : 'https') + '://' + hostname + ':' + port;
+const transport = (insecure ? 'http' : 'https') + '://127.0.0.1:' + port;
 const certificate = resolve(folder, 'certificate.pem'), key = resolve(folder, 'key.pem');
-execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-noenc', '-keyout', key, '-out', certificate, '-days', '1', '-subj', '/CN=owner-https-test', '-addext', 'subjectAltName=IP:127.0.0.1'], { stdio: 'ignore' });
+execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-noenc', '-keyout', key, '-out', certificate, '-days', '1', '-subj', '/CN=owner-https-test', '-addext', 'subjectAltName=IP:127.0.0.1,DNS:blog.example.test,DNS:www.blog.example.test'], { stdio: 'ignore' });
 const ca = await readFile(certificate), nginxBin = process.env.NGINX_BIN || 'nginx';
 let app, nginx, cookie = '', csrf = '';
 async function start(enabled = true, allowPlain = insecure) {
@@ -38,7 +40,7 @@ function direct(path, extra = {}) { return fetch('http://127.0.0.1:' + backendPo
 function request(path, method = 'GET', value, extra = {}) {
     return new Promise((resolve, reject) => {
         const data = value === undefined ? undefined : JSON.stringify(value);
-        const req = (insecure ? httpRequest : httpsRequest)(origin + path, { ...(insecure ? {} : { ca }), method, headers: { Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}), ...(csrf ? { 'X-CSRF-Token': csrf } : {}), ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}), ...extra } }, res => {
+        const req = (insecure ? httpRequest : httpsRequest)(transport + path, { ...(insecure ? {} : { ca, ...(domain ? { servername: hostname } : {}) }), method, headers: { Host: hostname + ':' + port, Origin: origin, 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}), ...(csrf ? { 'X-CSRF-Token': csrf } : {}), ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}), ...extra } }, res => {
             const chunks = []; res.on('data', chunk => chunks.push(chunk));
             res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, text: Buffer.concat(chunks).toString() }));
         });
@@ -59,7 +61,7 @@ async function login(remember = false) {
 }
 try {
     await start();
-    const nginxConfig = `pid ${folder}/nginx.pid; error_log ${folder}/error.log; events {} http { access_log off; client_body_temp_path ${folder}/body; proxy_temp_path ${folder}/proxy; ${(insecure ? ownerHTTP : ownerHTTPS)({ ip: '127.0.0.1', secret, certificate, key, port, backendPort })} }`;
+    const nginxConfig = `pid ${folder}/nginx.pid; error_log ${folder}/error.log; events {} http { access_log off; client_body_temp_path ${folder}/body; proxy_temp_path ${folder}/proxy; ${(insecure ? ownerHTTP : ownerHTTPS)({ ip: '127.0.0.1', ...(domain ? { domain: hostname, aliases: ['www.blog.example.test'] } : {}), secret, certificate, key, port, backendPort })} }`;
     await writeFile(resolve(folder, 'nginx.conf'), nginxConfig, { mode: 0o600 });
     const check = spawnSync(nginxBin, ['-t', '-p', folder + '/', '-c', resolve(folder, 'nginx.conf')], { encoding: 'utf8' });
     assert.equal(check.status, 0, check.stderr);
@@ -67,10 +69,11 @@ try {
     for (let index = 0; ; index++) {
         try { assert.equal((await request('/_owner')).status, 200); break; } catch (error) { if (index >= 30 || nginx.exitCode !== null) throw error; await new Promise(resolve => setTimeout(resolve, 40)); }
     }
+    if (domain) { const alias = await request('/_owner?from=footer', 'GET', undefined, { Host: 'www.blog.example.test:' + port }); assert.equal(alias.status, 308); assert.equal(alias.headers.location, origin + '/_owner?from=footer'); }
     const page = await request('/'); assert.equal(page.status, 200); assert(page.text.includes('class="footer-owner" href="/_owner?from=footer"'));
     assert.equal((await request('/owner.html')).status, 404);
     assert.equal((await request('/api/owner/entries')).status, 401);
-    const proxy = { 'X-Ease2k-Owner-Proxy': secret, 'X-Forwarded-Proto': insecure ? 'http' : 'https', 'X-Forwarded-Host': '127.0.0.1:' + port };
+    const proxy = { 'X-Ease2k-Owner-Proxy': secret, 'X-Forwarded-Proto': insecure ? 'http' : 'https', 'X-Forwarded-Host': hostname + ':' + port };
     for (const headers of [{ 'X-Forwarded-Proto': 'https' }, { ...proxy, 'X-Ease2k-Owner-Proxy': 'wrong' }, { ...proxy, 'X-Forwarded-Proto': insecure ? 'https' : 'http' }, { ...proxy, 'X-Forwarded-Host': 'attacker.example' }, { ...proxy, Forwarded: 'proto=https' }]) assert.equal((await direct('/api/owner/session', headers)).status, 404);
     assert.equal((await direct('/api/owner/session')).status, 200, 'Existing SSH access must stay available');
     const state = JSON.parse((await request('/api/owner/session', 'GET', undefined, { ...proxy, 'X-Ease2k-Owner-Proxy': 'attacker', 'X-Forwarded-Host': 'attacker.example' })).text);
@@ -97,7 +100,7 @@ try {
         const newId = runInNewContext(javascript + '\nnewId', { exports: {}, crypto: { getRandomValues(value) { randomFillSync(value); return value; } } });
         const values = Array.from({ length: 100 }, () => newId()); assert.equal(new Set(values).size, 100); assert(values.every(value => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(value)));
     }
-    console.log('PASS: ' + (insecure ? 'explicit HTTP opt-in, non-secure-context UUID generation' : 'certificate-verified HTTPS') + ', real Nginx, footer entry, proxy spoofing rejection, cookie attributes, 8-hour/30-day sessions, CSRF, private drafts, restart, logout revocation and unchanged password.');
+    console.log('PASS: ' + (insecure ? 'explicit HTTP opt-in, non-secure-context UUID generation' : domain ? 'certificate-verified domain HTTPS and canonical alias redirects' : 'certificate-verified HTTPS') + ', real Nginx, footer entry, proxy spoofing rejection, cookie attributes, 8-hour/30-day sessions, CSRF, private drafts, restart, logout revocation and unchanged password.');
 } finally {
     if (app?.exitCode === null) await stop();
     if (nginx?.exitCode === null) { const exit = once(nginx, 'exit'); nginx.kill('SIGTERM'); await exit; }

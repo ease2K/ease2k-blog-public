@@ -23,6 +23,7 @@
     "test:experience": "node self-hosted/test-experience.mjs",
     "test:translation": "node self-hosted/test-translation.mjs",
     "test:owner-https": "node self-hosted/test-owner-https.mjs",
+    "test:owner-domain": "node self-hosted/test-owner-domain-config.mjs && node self-hosted/test-owner-https.mjs --domain",
     "test:owner-http": "node self-hosted/test-owner-https.mjs --http"
   },
   "dependencies": {

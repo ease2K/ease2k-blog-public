@@ -4,7 +4,7 @@
 
 Source code for a personal blog featuring public journal entries, technical articles, projects, programming contest awards and certificates, and Codeforces / AtCoder ratings and history charts. The interface supports Chinese and English, light and dark themes, article tables of contents, Markdown, and mathematical notation.
 
-Built with React, Vite, and Node.js. Public visitors see published content. A separate password-protected owner workspace is available through an SSH tunnel.
+Built with React, Vite, and Node.js. Public visitors see published content. A separate password-protected owner workspace is available through a configured HTTPS entry or an SSH tunnel.
 
 ## Local development
 
@@ -28,7 +28,9 @@ Open http://localhost:3000. The server listens on the loopback interface; produc
 
 ## Owner workspace
 
-The unlisted workspace is available at `/_owner`. It accepts loopback or SSH-tunnel connections only; requests through the public proxy receive a 404 response.
+The unlisted workspace is available at `/_owner`. Without a public entry configured, it accepts loopback or SSH-tunnel connections only. Once an HTTPS domain is configured, the footer nickname opens the secure workspace on the same domain.
+
+If the site already uses an HTTPS domain, follow the [owner guide](self-hosted/OWNER.md) to run `configure-owner-domain.sh`. The script reuses the current certificate, disables the old HTTP IP login, and preserves the HTTPS public origin for future deployments.
 
 To try it locally:
 

@@ -2,6 +2,12 @@
 
 工作台支持配置后的在线入口，并保留 SSH 维护方式。默认只接受本机或已验证的 HTTPS 代理；只有站主明确选择并设置允许标志后才接受公网 HTTP。入口路径为 `/_owner`，不出现在主导航中；密码和会话校验才是授权依据。
 
+## 使用网站已有的 HTTPS 域名
+
+网站已有可信 HTTPS 域名时，在部署包目录运行 `bash configure-owner-domain.sh example.com`（以 root 执行，替换为当前域名）。脚本复用当前域名证书及 Certbot TLS 策略，不签发新证书，不更改站主密码；统一公开站点和工作台来源，启用受信任的 HTTPS 反向代理。域名别名跳转到主域名，旧 HTTP IP 站主页面只允许跳转到 HTTPS，旧明文登录接口停用。
+
+登录 Cookie 使用 `__Host-` 前缀及 `Secure`、`HttpOnly`、`SameSite=Strict`。从旧 IP 或 HTTP 切换到 HTTPS 域名后，需要用原密码重新登录一次。公开来源通过 systemd override 保存，后续部署会读取有效来源配置，避免覆盖成旧 IP。迁移前自动备份配置，验证失败自动回退；已有 Certbot 续期任务保持不变。
+
 ## 首次设置站主密码
 
 部署后，在服务器 root 终端运行：

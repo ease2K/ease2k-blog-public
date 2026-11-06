@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { ownerHTTP, ownerHTTPS } from './deploy/owner-nginx.mjs';
+
+const directory = await mkdtemp(resolve(tmpdir(), 'ease2k-owner-domain-config-'));
+const secret = randomBytes(32).toString('hex'), domain = 'blog.example.test';
+try {
+    for (const path of ['etc/nginx/conf.d', 'etc/ease2k-blog', 'etc/systemd/system/ease2k-blog.service.d']) await mkdir(resolve(directory, path), { recursive: true });
+    const certificate = resolve(directory, 'certificate.pem'), key = resolve(directory, 'key.pem');
+    execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-noenc', '-keyout', key, '-out', certificate, '-days', '1', '-subj', '/CN=blog.example.test', '-addext', 'subjectAltName=DNS:blog.example.test,DNS:www.blog.example.test'], { stdio: 'ignore' });
+    const domainFile = resolve(directory, 'etc/nginx/conf.d/ease2k-domain.conf'), ipFile = resolve(directory, 'etc/nginx/conf.d/ease2k-ip-preview.conf'), envFile = resolve(directory, 'etc/ease2k-blog/owner-https.env');
+    await writeFile(domainFile, 'server {\n    server_name blog.example.test www.blog.example.test;\n    listen 443 ssl;\n    ssl_certificate ' + certificate + ';\n    ssl_certificate_key ' + key + ';\n    include /etc/letsencrypt/options-ssl-nginx.conf;\n    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;\n    location ^~ /_owner { return 404; }\n}\n');
+    await writeFile(ipFile, ownerHTTP({ ip: '127.0.0.1', secret }));
+    await writeFile(envFile, 'BLOG_OWNER_PUBLIC_ORIGIN=http://127.0.0.1\nBLOG_OWNER_PROXY_SECRET=' + secret + '\nBLOG_OWNER_ALLOW_HTTP=1\n', { mode: 0o600 });
+    const script = await readFile('self-hosted/deploy/configure-owner-domain.sh', 'utf8');
+    let javascript = script.match(/<<'JS'\n([\s\S]*?)\nJS\n/)[1];
+    for (const prefix of ['/etc/nginx/conf.d/', '/etc/ease2k-blog/', '/etc/systemd/system/']) javascript = javascript.replaceAll(prefix, directory + prefix);
+    const run = () => execFileSync(process.execPath, ['--input-type=module', '-', resolve('self-hosted/deploy/owner-nginx.mjs'), domain], { input: javascript, stdio: ['pipe', 'pipe', 'pipe'] });
+    run();
+    const nginx = await readFile(domainFile, 'utf8'), ip = await readFile(ipFile, 'utf8'), env = await readFile(envFile, 'utf8');
+    assert(nginx.includes('server_name blog.example.test www.blog.example.test;'));
+    assert(nginx.includes('X-Forwarded-Proto https;')); assert(nginx.includes('X-Forwarded-Host blog.example.test;'));
+    assert(nginx.includes('include /etc/letsencrypt/options-ssl-nginx.conf;')); assert(nginx.includes('ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;'));
+    assert(!nginx.includes('ssl_protocols TLSv1.2 TLSv1.3;'), 'Existing Certbot TLS policy must not be duplicated');
+    assert(nginx.includes('X-Ease2k-Owner-Proxy ' + secret));
+    assert(!ip.includes(secret), 'The old HTTP proxy must stop forwarding the authentication secret');
+    assert(ip.includes('return 308 https://blog.example.test$request_uri;')); assert(ip.includes('location = /api/owner/login { return 404; }'));
+    assert(!ip.includes('limit_req_zone'));
+    assert(env.includes('BLOG_OWNER_PUBLIC_ORIGIN=https://blog.example.test')); assert(env.includes('BLOG_OWNER_PROXY_SECRET=' + secret)); assert(!env.includes('BLOG_OWNER_ALLOW_HTTP'));
+    const override = await readFile(resolve(directory, 'etc/systemd/system/ease2k-blog.service.d/30-public-origin.conf'), 'utf8'); assert(override.includes('BLOG_PUBLIC_ORIGIN=https://blog.example.test'));
+    run(); assert.equal(await readFile(domainFile, 'utf8'), nginx); assert.equal(await readFile(ipFile, 'utf8'), ip); assert.equal(await readFile(envFile, 'utf8'), env);
+    for (const value of ['bad;domain.test', '../bad.test', 'bad..test', '-bad.test', 'https://blog.example.test']) assert.throws(() => ownerHTTPS({ domain: value, secret, certificate, key }));
+    assert.throws(() => ownerHTTPS({ ip: '127.0.0.1', aliases: ['bad;domain.test'], secret, certificate, key }));
+    const unit = resolve(directory, 'etc/systemd/system/ease2k-blog.service'); await writeFile(unit, 'Environment=BLOG_PUBLIC_ORIGIN=http://127.0.0.1\n');
+    const install = await readFile('self-hosted/deploy/install.sh', 'utf8');
+    const section = install.slice(install.indexOf('public_origin=${BLOG_PUBLIC_ORIGIN:-}'), install.indexOf("cat > /etc/systemd/system/ease2k-blog.service <<'UNIT'")).replaceAll('/etc/systemd/system/ease2k-blog.service', unit);
+    const command = 'set -euo pipefail\nunset BLOG_PUBLIC_ORIGIN\nsystemctl() { printf "%s\\n" "NODE_ENV=production BLOG_PUBLIC_ORIGIN=https://blog.example.test PORT=3000"; }\n' + section + '\nprintf "%s" "$public_origin"';
+    assert.equal(execFileSync('bash', ['-c', command], { encoding: 'utf8' }), 'https://blog.example.test', 'Reinstall must preserve the effective HTTPS origin from systemd overrides');
+    console.log('PASS: HTTP-to-domain migration, certificate and TLS policy preservation, canonical aliases, secret preservation, disabled plaintext owner access, repeatable configuration and HTTPS origin preservation during reinstall.');
+} finally { await rm(directory, { recursive: true, force: true }); }

@@ -16,7 +16,8 @@ find "$release_dir" -type f -exec chmod 644 {} +
 ln -sfn "$release_dir" /opt/ease2k-blog/current
 public_origin=${BLOG_PUBLIC_ORIGIN:-}
 if [[ -z "$public_origin" && -f /etc/systemd/system/ease2k-blog.service ]]; then
-    public_origin=$(sed -n 's/^Environment=BLOG_PUBLIC_ORIGIN=//p' /etc/systemd/system/ease2k-blog.service | head -n 1)
+    public_origin=$(systemctl show ease2k-blog -p Environment --value | node -e 'const text=require("node:fs").readFileSync(0,"utf8"); process.stdout.write(/(?:^|\s)"?BLOG_PUBLIC_ORIGIN=([^"\s]+)/.exec(text)?.[1] || "")')
+    public_origin=${public_origin:-$(sed -n 's/^Environment=BLOG_PUBLIC_ORIGIN=//p' /etc/systemd/system/ease2k-blog.service | head -n 1)}
 fi
 public_origin=${public_origin:-http://localhost:3000}
 cat > /etc/systemd/system/ease2k-blog.service <<'UNIT'

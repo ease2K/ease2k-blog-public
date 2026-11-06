@@ -2,12 +2,15 @@ import { readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 export const acmeLocation = '    location ^~ /.well-known/acme-challenge/ { root /var/lib/ease2k-acme; default_type text/plain; try_files $uri =404; }\n';
-function ownerConfig({ ip, secret, certificate, key, port, backendPort = 3000, secure = true }) {
+function ownerConfig({ ip, domain, aliases = [], secret, certificate, key, port, backendPort = 3000, secure = true }) {
     port ??= secure ? 443 : 80;
-    if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(ip) || ip.split('.').some(part => Number(part) > 255) || !/^[a-f0-9]{64}$/.test(secret)) throw Error('Invalid owner proxy configuration');
+    const validDomain = value => typeof value === 'string' && value.length <= 253 && value.includes('.') && value.split('.').every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label));
+    if (!Array.isArray(aliases) || aliases.some(value => !validDomain(value))) throw Error('Invalid owner aliases');
+    if (domain ? !secure || !validDomain(domain) : !/^\d{1,3}(\.\d{1,3}){3}$/.test(ip) || ip.split('.').some(part => Number(part) > 255)) throw Error('Invalid owner address');
+    if (!/^[a-f0-9]{64}$/.test(secret)) throw Error('Invalid owner proxy configuration');
     if (![port, backendPort].every(value => Number.isInteger(value) && value > 0 && value < 65536)) throw Error('Invalid proxy port');
     if (secure && ![certificate, key].every(value => /^\/[A-Za-z0-9_./-]+$/.test(value))) throw Error('Invalid certificate path');
-    const host = ip + (port === (secure ? 443 : 80) ? '' : ':' + port), protocol = secure ? 'https' : 'http';
+    const hostname = domain || ip, host = hostname + (port === (secure ? 443 : 80) ? '' : ':' + port), protocol = secure ? 'https' : 'http';
     const ownerProxy = `        proxy_pass http://127.0.0.1:${backendPort};
         proxy_http_version 1.1;
         proxy_set_header Host localhost:${backendPort};
@@ -24,8 +27,8 @@ function ownerConfig({ ip, secret, certificate, key, port, backendPort = 3000, s
 limit_req_zone $binary_remote_addr zone=ease2k_owner_login:1m rate=5r/m;
 server {
     listen ${port}${secure ? ' ssl' : ''};
-    server_name ${ip};
-    if ($host != "${ip}") { return 421; }
+    server_name ${[hostname, ...aliases].join(' ')};
+    if ($host != "${hostname}") { ${domain ? 'return 308 https://' + host + '$request_uri;' : 'return 421;'} }
 ${secure ? '    ssl_certificate ' + certificate + ';\n    ssl_certificate_key ' + key + ';\n    ssl_protocols TLSv1.2 TLSv1.3;\n' : ''}
     server_tokens off;
     charset utf-8;
