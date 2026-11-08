@@ -112,7 +112,7 @@ npm run test:learning
 ## 平台账号
 
 - [GitHub](https://github.com/ease2K)
-- [Codeforces](https://codeforces.com/profile/ease2k)
+- [Codeforces](https://codeforces.com/profile/ease2kk)
 - [AtCoder](https://atcoder.jp/users/ease2k)
 
 ## 源码与内容使用说明

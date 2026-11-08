@@ -3,8 +3,8 @@ import { ratingColor, ratingLevels } from '../lib/rating-colors.mjs';
 import { createRatingsProvider, parseRating, parseHistory } from '../lib/ratings.mjs';
 
 const cf = rating => ({ status: 'OK', result: [
-    { handle: 'ease2k', contestId: 1, contestName: 'First round', rank: 100, oldRating: 0, newRating: 1800, ratingUpdateTimeSeconds: 1750000000 },
-    { handle: 'ease2k', contestId: 2, contestName: 'Second round', rank: 200, oldRating: 1800, newRating: rating, ratingUpdateTimeSeconds: 1760000000 },
+    { handle: 'ease2kk', contestId: 1, contestName: 'First round', rank: 100, oldRating: 0, newRating: 1800, ratingUpdateTimeSeconds: 1750000000 },
+    { handle: 'ease2kk', contestId: 2, contestName: 'Second round', rank: 200, oldRating: 1800, newRating: rating, ratingUpdateTimeSeconds: 1760000000 },
 ] });
 const atPoint = (rating, date, id) => ({ IsRated: true, OldRating: 1100, NewRating: rating, EndTime: date, ContestScreenName: id + '.contest.atcoder.jp', ContestName: id, ContestNameEn: id, Place: 100 });
 const at = [
@@ -15,7 +15,7 @@ const at = [
 assert.deepEqual(parseRating('atcoder', at), { rating: 1234, maxRating: 1400 });
 assert.deepEqual(parseRating('atcoder', []), { rating: null, maxRating: null });
 assert.throws(() => parseRating('codeforces', { status: 'FAILED' }));
-assert.throws(() => parseRating('codeforces', { status: 'OK', result: [{ handle: 'other', rating: 1600, maxRating: 1800 }] }));
+assert.throws(() => parseRating('codeforces', { status: 'OK', result: [{ ...cf(1630).result[0], handle: 'ease2k' }] }));
 assert.throws(() => parseRating('atcoder', [{ IsRated: true, NewRating: '1234', EndTime: 'invalid' }]));
 assert.deepEqual(parseRating('codeforces', { status: 'OK', result: [] }), { rating: null, maxRating: null });
 assert.deepEqual(parseHistory('atcoder', [...at].reverse()).map(point => point.id), ['abc450', 'abc460']);

@@ -112,7 +112,7 @@ Bundled files provide initial content. Online edits are persisted with Node.jsâ€
 ## Profiles
 
 - [GitHub](https://github.com/ease2K)
-- [Codeforces](https://codeforces.com/profile/ease2k)
+- [Codeforces](https://codeforces.com/profile/ease2kk)
 - [AtCoder](https://atcoder.jp/users/ease2k)
 
 ## Source code and content usage

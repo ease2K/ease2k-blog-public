@@ -42,7 +42,7 @@ export type Entry = {
 };
 
 export const profiles = {
-    codeforces: "https://codeforces.com/profile/ease2k",
+    codeforces: "https://codeforces.com/profile/ease2kk",
     atcoder: "https://atcoder.jp/users/ease2k",
     github: "https://github.com/ease2K",
 };
