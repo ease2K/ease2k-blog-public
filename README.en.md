@@ -1,4 +1,4 @@
-# ease2k Personal Blog
+# ease2k Blog · Node.js
 
 [简体中文](README.md) | **English**
 
