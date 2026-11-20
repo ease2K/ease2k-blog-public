@@ -15,5 +15,15 @@ export default defineConfig({
         },
     }],
     resolve: { alias: { '@': fileURLToPath(new URL('..', import.meta.url)) } },
-    build: { outDir: 'build/client', emptyOutDir: true, sourcemap: false, rolldownOptions: { input: { blog: here + 'index.html', owner: here + 'owner.html' } } },
+    build: {
+        outDir: 'build/client',
+        emptyOutDir: true,
+        sourcemap: false,
+        manifest: true,
+        assetsInlineLimit: file => /\.(?:woff2?|ttf)$/.test(file) ? false : undefined,
+        rolldownOptions: {
+            input: { blog: here + 'index.html', owner: here + 'owner.html' },
+            output: { codeSplitting: { groups: [{ name: 'hyperellipse', test: '/node_modules/hyperellipse/' }] } },
+        },
+    },
 });

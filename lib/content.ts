@@ -18,6 +18,7 @@ export type Entry = {
     read: number;
     sample?: boolean;
     hasBody?: boolean;
+    hasEnglishBody?: boolean;
     visibility?: "public" | "private";
     section?: "competitions";
     series?: SeriesInfo;

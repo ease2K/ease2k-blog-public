@@ -20,7 +20,7 @@ const directory = resolve(process.env.BLOG_EDITOR_DIR || fileURLToPath(new URL('
 const store = openStore(directory, entries);
 const registry = seriesStore(store), resources = resourceStore(store, directory);
 const removedRoutes = new Set(['signin', 'signout', 'login', 'logout', 'admin', 'private', 'signin-with-chatgpt', 'signout-with-chatgpt']);
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.webp': 'image/webp', '.jpg': 'image/jpeg', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
 function json(res, data, status = 200) {
     res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify(data));
@@ -74,7 +74,16 @@ async function handle(req, res) {
         res.writeHead(result.status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', Vary: 'Accept-Language' });
         return res.end(req.method === 'HEAD' ? undefined : result.html);
     }
-    res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Content-Length': stat.size, 'Cache-Control': file.includes(sep + 'assets' + sep) ? 'public, max-age=31536000, immutable' : 'no-cache' });
+    const versioned = file.startsWith(resolve(root, 'assets') + sep);
+    const cacheControl = versioned ? 'public, max-age=31536000, immutable' : 'no-cache';
+    const etag = 'W/"' + stat.size.toString(16) + '-' + Math.trunc(stat.mtimeMs).toString(16) + '"';
+    const headers = { 'Cache-Control': cacheControl, ETag: etag };
+    const validators = req.headers['if-none-match']?.split(',').map(value => value.trim().replace(/^W\//, ''));
+    if (validators?.some(value => value === '*' || value === etag.slice(2))) {
+        res.writeHead(304, headers);
+        return res.end();
+    }
+    res.writeHead(200, { ...headers, 'Content-Type': types[extname(file)] || 'application/octet-stream', 'Content-Length': stat.size });
     if (req.method === 'HEAD') return res.end();
     createReadStream(file).on('error', () => res.destroy()).pipe(res);
 }

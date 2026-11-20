@@ -33,7 +33,7 @@ node --input-type=module - "$package_dir/owner-nginx.mjs" "$blog_domain" <<'JS'
 import { readFileSync, writeFileSync, chmodSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
-const { ownerHTTPS } = await import(pathToFileURL(process.argv[2]));
+const { ownerHTTPS, nginxHttp2Mode } = await import(pathToFileURL(process.argv[2]));
 const domain = process.argv[3].toLowerCase(), file = '/etc/nginx/conf.d/ease2k-domain.conf';
 const previous = readFileSync(file, 'utf8');
 const names = /^\s*server_name\s+([^;]+);/m.exec(previous)?.[1].trim().split(/\s+/) || [];
@@ -43,7 +43,7 @@ const key = /^\s*ssl_certificate_key\s+([^;\s]+);/m.exec(previous)?.[1];
 for (const name of names) execFileSync('openssl', ['x509', '-in', certificate, '-noout', '-checkhost', name], { stdio: 'pipe' });
 const envFile = '/etc/ease2k-blog/owner-https.env', env = readFileSync(envFile, 'utf8');
 const secret = /^BLOG_OWNER_PROXY_SECRET=([a-f0-9]{64})$/m.exec(env)?.[1];
-let config = ownerHTTPS({ domain, aliases: names.filter(name => name !== domain), secret, certificate, key });
+let config = ownerHTTPS({ domain, aliases: names.filter(name => name !== domain), secret, certificate, key, http2: nginxHttp2Mode() });
 const tlsOptions = previous.split('\n').filter(line => /^\s*(?:include \/etc\/letsencrypt\/options-ssl-nginx\.conf;|ssl_dhparam \/[A-Za-z0-9_./-]+;)/.test(line));
 if (tlsOptions.some(line => line.includes('include '))) config = config.replace('    ssl_protocols TLSv1.2 TLSv1.3;', tlsOptions.join('\n'));
 config = config.replace('    server_tokens off;', '    server_tokens off;\n    add_header X-Ease2k-Domain "1" always;');

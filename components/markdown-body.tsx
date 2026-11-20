@@ -7,7 +7,13 @@ import CodeBlock from "@/components/code-block";
 type Lang = "zh" | "en";
 type MathPlugins = typeof import("@/lib/math-plugins");
 let mathRequest: Promise<MathPlugins> | undefined;
-function loadMath() { return mathRequest ||= import("@/lib/math-plugins").catch(error => { mathRequest = undefined; throw error; }); }
+let loadedMath: MathPlugins | null = null;
+export function prepareMath() {
+    return mathRequest ||= import("@/lib/math-plugins").then(module => {
+        loadedMath = module;
+        return module;
+    }).catch(error => { mathRequest = undefined; throw error; });
+}
 function codeMetadata() {
     return (tree: { type?: string; meta?: string; data?: Record<string, unknown>; children?: unknown[] }) => {
         function visit(node: typeof tree) {
@@ -18,15 +24,14 @@ function codeMetadata() {
     };
 }
 
-export default function MarkdownBody({ text, lang, onOutline, owner = false, searchQuery = "" }: { text: string; lang: Lang; onOutline?: OutlineHandler; owner?: boolean; searchQuery?: string }) {
+export default function MarkdownBody({ text, lang, onOutline, owner = false, searchQuery = "", needsMath }: { text: string; needsMath: boolean; lang: Lang; onOutline?: OutlineHandler; owner?: boolean; searchQuery?: string }) {
     const content = useRef<HTMLDivElement>(null);
-    const needsMath = /\$\$|(^|[^\\])\$(?=\S)[^\n]*[^\\]\$/.test(text);
-    const [math, setMath] = useState<MathPlugins | null>(null), [mathFailed, setMathFailed] = useState(false);
+    const [math, setMath] = useState<MathPlugins | null>(loadedMath), [mathFailed, setMathFailed] = useState(false);
     useEffect(() => {
         if (!needsMath || math) return;
         let active = true;
         setMathFailed(false);
-        loadMath().then(value => { if (active) setMath(value); }).catch(() => { if (active) setMathFailed(true); });
+        prepareMath().then(value => { if (active) setMath(value); }).catch(() => { if (active) setMathFailed(true); });
         return () => { active = false; };
     }, [text, needsMath, math]);
     const [headings, setHeadings] = useState<Heading[]>([]), [activeId, setActiveId] = useState("");
@@ -65,6 +70,6 @@ export default function MarkdownBody({ text, lang, onOutline, owner = false, sea
             const language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "text";
             return <CodeBlock searchQuery={searchQuery} code={String(child.props.children || "").replace(/\n$/, "")} language={language} meta={child.props["data-code-meta"] || ""} lang={lang} />;
         },
-    }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math, owner]);
+    }}>{text.replace(/^# [^\n]+\r?\n/, "")}</Markdown>, [text, lang, needsMath, math, owner, searchQuery]);
     return <>{mathFailed && <p className="language-note" role="status">{lang === "zh" ? "公式排版暂未加载，已显示原始公式。" : "Math formatting could not load; the source formula is shown."}</p>}<ArticleToc headings={headings} activeId={activeId} lang={lang} compact /><div className="prose" data-reading-ready={needsMath && !math && !mathFailed ? undefined : "true"} ref={content}>{markdown}</div></>;
 }

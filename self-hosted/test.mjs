@@ -31,6 +31,45 @@ const request = (path, options = {}) => fetch(origin + path, { redirect: 'manual
 try {
     await start();
     assert.equal((await request('/healthz')).status, 200);
+    for (const [language, title] of [['zh-CN', '更新日志'], ['en-US', 'Changelog']]) {
+        const changelog = await request('/changelog', { headers: { 'accept-language': language } });
+        assert.equal(changelog.status, 200);
+        const html = await changelog.text();
+        assert(html.includes('<h1>' + title + '</h1>'));
+        assert(html.includes('rel="canonical" href="' + origin + '/changelog"'));
+        const dates = [...html.matchAll(/<time dateTime="(\d{4}-\d{2}-\d{2})">/gi)].map(match => match[1]);
+        assert(dates.includes('2026-10-27'));
+        assert(dates.includes('2026-11-07'));
+        assert.deepEqual(dates, [...dates].sort().reverse());
+    }
+    assert.equal((await request('/changelog/missing')).status, 404);
+    assert((await (await request('/sitemap.xml')).text()).includes('<loc>' + origin + '/changelog</loc>'));
+    const home = await (await request('/')).text();
+    const iconPath = /src="(\/assets\/atcoder-[\w-]+\.webp)"/.exec(home)?.[1];
+    assert(iconPath, 'Home uses the versioned AtCoder icon');
+    const icon = await request(iconPath);
+    assert.equal(icon.headers.get('content-type'), 'image/webp');
+    assert.match(icon.headers.get('cache-control'), /immutable/);
+    assert((await icon.arrayBuffer()).byteLength < 3000);
+    assert(!/href="[^"]*(?:math-plugins|markdown-body|ratings|reading-tools)-/.test(home));
+    const article = await (await request('/entry/cpp-priority-queue-introduction', { headers: { 'accept-language': 'zh-CN' } })).text();
+    const body = article.split('<script id="blog-bootstrap"')[0];
+    assert(body.includes('<h2>一、优先队列与普通队列的区别</h2>'));
+    assert(body.includes('class="katex"'));
+    assert(!body.includes('正在排版正文') && !body.includes('<template id="B:'));
+    const mathCssPath = /href="(\/assets\/math-plugins-[\w-]+\.css)"/.exec(article)?.[1];
+    assert(mathCssPath);
+    const mathCss = await (await request(mathCssPath)).text();
+    assert(!mathCss.includes('data:font'));
+    const fontUrl = /url\(["']?([^)'"]+\.woff2)["']?\)/.exec(mathCss)?.[1];
+    assert(fontUrl);
+    const font = await fetch(new URL(fontUrl, origin + mathCssPath));
+    assert.equal(font.headers.get('content-type'), 'font/woff2');
+    assert.equal(font.status, 200);
+    const screenshot = await request('/projects/personal-blog.webp');
+    const validator = screenshot.headers.get('etag');
+    assert(validator);
+    assert.equal((await request('/projects/personal-blog.webp', { headers: { 'if-none-match': validator } })).status, 304);
     assert.equal((await request('/brands/github-black.svg')).status, 200);
     for (const award of awards) {
         const file = resolve('self-hosted/build/client', '.' + award.certificate);

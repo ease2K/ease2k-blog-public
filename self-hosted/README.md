@@ -9,6 +9,7 @@
 | 内容 | 文件 |
 | --- | --- |
 | 日常记录 | `lib/journal.json` |
+| 网站更新日志 | `lib/changelog.ts` |
 | 文章、项目、站点介绍、奖项与原创题目元数据 | `lib/content.ts` |
 | C++ 教程原稿 | `content/competitions/*.md` |
 | 获奖证书图片 | `public/awards/` |
@@ -16,6 +17,8 @@
 | 配色与样式 | `styles/globals.css` |
 
 现有公开日记已经导入 `lib/journal.json`。添加日记时可参考其中现有记录，填写唯一 id、title、summary、body、date、tags、read，kind 保持 daily；英文内容可暂留空。正文支持 Markdown。
+
+每次发布网站改动时，在 `lib/changelog.ts` 的 `releases` 开头添加一条记录。填写上线日期（`YYYY-MM-DD`）、中英文标题和面向访客的改动说明。部署后，新记录会显示在 `/changelog` 顶部。
 
 部署包只放准备公开的内容，不要把个人凭据或未公开记录写入源码或 public 目录。构建会拒绝标记为 private 的静态条目。
 
@@ -63,6 +66,10 @@ journalctl -u ease2k-blog -n 30 --no-pager
 服务仅监听本机 3000，默认 BLOG_ORIGIN 为 http://localhost:3000，与当前 Nginx 转发 Host 一致。首次建立 IP 入口可运行包内 `bash configure-ip-preview.sh YOUR_SERVER_IP`，该脚本会检查与备份 Nginx 配置，失败时回退。域名入口使用源码中的 `bash self-hosted/deploy/configure-domain.sh example.com`，将 `example.com` 替换成自己的根域名。
 
 备案完成后配置域名解析和 HTTPS，调整 Nginx 的域名入口即可；站主工作台可按 [站主说明](OWNER.md) 配置 HTTPS 在线访问，SSH 保留为备用维护方式。中国内地服务器通过公网 IP 提供网站服务同样适用备案要求。
+
+### 为现有 HTTPS 域名启用 HTTP/2
+
+在服务器解压新版部署包后，以 root 运行 `bash configure-http2.sh example.com`（替换为自己的 HTTPS 域名）。脚本按 Nginx 版本选择语法，只修改已配置域名的 HTTPS 监听，检查配置并在本机验证协议协商。失败会恢复原配置。可用 `curl --http2 -o /dev/null -sS -w '%{http_version}\n' https://example.com/` 从客户端复查，预期输出 `2`。
 
 ## 竞赛与 Rating
 

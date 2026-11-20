@@ -1,5 +1,9 @@
 # ease2k 个人博客
 
+这是旧版博客的公开 Node.js 学习仓库。后端入口在 `self-hosted/runtime/server.mjs`，站主工作台使用 Node.js 内置的 SQLite。启用工作台后建议另外设置本地试用密码。
+
+Java 后端可参阅 [Spring Boot 公开学习版](https://github.com/ease2K/ease2k-blog-springboot-public)。
+
 **简体中文** | [English](README.en.md)
 
 个人博客源码，包含公开日常、技术文章、项目、竞赛奖项与证书，以及 Codeforces / AtCoder Rating 和历史曲线。支持中英文、浅色与深色主题、文章目录、Markdown 和数学公式。

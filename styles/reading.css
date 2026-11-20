@@ -1,7 +1,7 @@
-.site-home .clock-banner { min-height: 106px; padding: 19px 28px; }
+.site-home .clock-banner { min-height: 90px; padding: 14px 28px; }
 .site-home .clock-date > div { font-size: 25px; }
-.site-home .clock-time time { font-size: 37px; }
-.site-home .clock-label { margin-bottom: 5px; }
+.site-home .clock-time time { font-size: 34px; }
+.site-home .clock-label { margin-bottom: 3px; }
 .section-intro { color: var(--muted); font-size: 13px; margin: -3px 0 16px; }
 .home-current { padding: 22px 24px; margin-bottom: 34px; border: 1px solid var(--line); border-radius: 16px; background: var(--home-panel, var(--surface)); }
 .home-current h2, .home-topics h2 { display: flex; align-items: center; gap: 9px; font-size: 17px; margin-bottom: 16px; }
@@ -35,16 +35,27 @@
 .reading-progress progress::-webkit-progress-value, .reading-tools > progress::-webkit-progress-value { background: var(--blue-text); }
 .reading-progress progress::-moz-progress-bar, .reading-tools > progress::-moz-progress-bar { background: var(--blue-text); }
 .reading-progress small { display: block; margin-top: 10px; font-size: 11px; line-height: 1.8; color: var(--muted); }
-.reading-tools { margin: 22px 0 28px; padding: 16px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; }
-.reading-tools strong { font-size: 13px; font-weight: 550; }
-.reading-tools small { display: block; font-size: 11px; line-height: 1.7; margin-top: 4px; color: var(--muted); }
-.reading-tools > div:last-child { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-.reading-tools button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 12px; background: var(--surface); color: var(--blue-text); }
+.reading-progress.reading-progress-compact {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 16px; align-items: center;
+    margin-bottom: 24px; padding: 14px 18px;
+}
+.reading-progress-compact h2 { font-size: 16px; }
+.reading-progress-compact p { overflow-wrap: anywhere; }
+.reading-progress-compact > progress { grid-column: 1 / -1; margin: 0; height: 4px; }
+.reading-progress-compact > .primary-button { grid-column: 2; grid-row: 1; min-height: 44px; white-space: nowrap; }
+.reading-progress-compact > small { grid-column: 1 / -1; margin: 0; }
+.article-meta { margin-bottom: 15px; padding-bottom: 0; border: 0; }
+.reading-tools { margin: 0 0 16px; color: var(--muted); font-size: 11px; }
+.reading-tools > progress { height: 4px; margin: 0; }
+.reading-tools-status { display: flex; align-items: center; flex-wrap: wrap; gap: 0 12px; min-height: 27px; }
+.reading-tools-status button { display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 3px; color: var(--blue-text); }
+.reading-tools small { font-size: inherit; }
 .chapter-completed { background: var(--blue-soft); color: var(--blue-text); }
 .article-maintenance { margin: 21px 0; font-size: 12px; color: var(--muted); line-height: 1.85; overflow-wrap: anywhere; }
 .article-maintenance p > strong { font-weight: 550; color: var(--text); margin-right: 10px; }
 .article-maintenance > p { padding: 10px 13px; border-left: 2px solid var(--blue-text); background: var(--surface-soft); margin-bottom: 10px; }
-.article-correction summary { display: inline-flex; align-items: center; gap: 7px; min-height: 40px; cursor: pointer; color: var(--blue-text); }
+.article-correction { font-size: 12px; color: var(--muted); line-height: 1.85; }
+.article-correction summary { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; cursor: pointer; color: var(--blue-text); }
 .article-correction[open] { padding: 13px 16px; border: 1px solid var(--line); border-radius: 12px; }
 .article-correction > div { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 8px; }
 .article-correction a, .article-correction button { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; color: var(--blue-text); font-size: 12px; padding: 0; }
@@ -52,15 +63,32 @@
 .owner-metadata h2 { margin: 20px 0 15px; font-size: 17px; }
 .owner-project-upload { border: 1px dashed var(--line); border-radius: 10px; padding: 13px; }
 @media (max-width: 540px) {
-    .site-home .clock-banner { min-height: 115px; padding: 17px 20px; }
-    .site-home .clock-date > div { font-size: 20px; }
-    .site-home .clock-time time { font-size: 28px; }
-    .site-home .clock-weekday { font-size: 12px; }
+    .site-home .clock-banner { min-height: 73px; margin-top: 14px; padding: 12px 16px; border-radius: 16px; gap: 8px; }
+    .site-home .clock-date > .clock-label { display: none; }
+    .site-home .clock-date > div { font-size: 16px; line-height: 1.35; }
+    .site-home .clock-time { padding-left: 0; }
+    .site-home .clock-time time { font-size: 24px; letter-spacing: 0; }
+    .site-home .clock-time .clock-label { margin-bottom: 2px; font-size: 10px; gap: 5px; white-space: nowrap; }
+    .site-home .clock-weekday { margin-top: 3px; font-size: 11px; }
+    .site-home .main-layout { padding-top: 20px; }
+    .home-featured .entry-row { padding: 15px 16px; }
+    .home-featured .entry-row + .entry-row::before { left: 16px; right: 16px; }
     .home-current { padding: 19px; margin-bottom: 27px; }
     .reading-progress { padding: 19px; }
+    .reading-progress.reading-progress-compact { padding: 12px 14px; gap: 8px 10px; margin-bottom: 18px; }
+    .reading-progress-compact .reading-progress-heading { gap: 7px; }
+    .reading-progress-compact .reading-progress-heading > svg { width: 14px; }
+    .reading-progress-compact h2 { font-size: 14px; }
+    .reading-progress-compact p { font-size: 12px; }
+    .reading-progress-compact .primary-button { padding-inline: 9px; }
+    .reading-progress-compact .primary-button svg { width: 12px; }
     .project-card-content { padding: 20px; }
     .project-card-content h2 { font-size: 21px; }
+    .detail { padding-top: 17px; }
+    .detail > .back-link { min-height: 32px; margin-bottom: 12px; }
+    .detail .series-reading { margin: 4px 0 14px; padding-bottom: 10px; }
+    .detail > h1 { font-size: 25px; line-height: 1.38; margin: 12px 0 8px; }
+    .article-meta { margin: 11px 0 10px; }
+    .reading-tools { margin-bottom: 9px; }
+    .article-toc-mobile { margin: 12px 0 16px; }
 }
-
-.reading-tools > progress { display: block; width: 100%; height: 5px; margin-top: 12px; border: 0; accent-color: var(--blue-text); }
-.reading-tools > div:last-child:empty { display: none; }

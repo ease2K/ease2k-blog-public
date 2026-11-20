@@ -5,6 +5,8 @@ import { resolve } from 'node:path';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import { request as httpsRequest } from 'node:https';
+import { connect as connectHttp2 } from 'node:http2';
+import { checkServerIdentity } from 'node:tls';
 import { request as httpRequest } from 'node:http';
 import { runInNewContext } from 'node:vm';
 import { randomFillSync } from 'node:crypto';
@@ -13,7 +15,7 @@ import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
 import { DatabaseSync } from 'node:sqlite';
 import { passwordHash } from './build/owner-store.mjs';
-import { ownerHTTPS, ownerHTTP } from './deploy/owner-nginx.mjs';
+import { nginxHttp2Mode, ownerHTTPS, ownerHTTP } from './deploy/owner-nginx.mjs';
 const insecure = process.argv.includes('--http'), domain = process.argv.includes('--domain');
 const hostname = domain ? 'blog.example.test' : '127.0.0.1';
 
@@ -61,7 +63,8 @@ async function login(remember = false) {
 }
 try {
     await start();
-    const nginxConfig = `pid ${folder}/nginx.pid; error_log ${folder}/error.log; events {} http { access_log off; client_body_temp_path ${folder}/body; proxy_temp_path ${folder}/proxy; ${(insecure ? ownerHTTP : ownerHTTPS)({ ip: '127.0.0.1', ...(domain ? { domain: hostname, aliases: ['www.blog.example.test'] } : {}), secret, certificate, key, port, backendPort })} }`;
+    const http2 = nginxHttp2Mode(nginxBin);
+    const nginxConfig = `pid ${folder}/nginx.pid; error_log ${folder}/error.log; events {} http { access_log off; client_body_temp_path ${folder}/body; proxy_temp_path ${folder}/proxy; ${(insecure ? ownerHTTP : ownerHTTPS)({ ip: '127.0.0.1', ...(domain ? { domain: hostname, aliases: ['www.blog.example.test'] } : {}), secret, certificate, key, port, backendPort, http2 })} }`;
     await writeFile(resolve(folder, 'nginx.conf'), nginxConfig, { mode: 0o600 });
     const check = spawnSync(nginxBin, ['-t', '-p', folder + '/', '-c', resolve(folder, 'nginx.conf')], { encoding: 'utf8' });
     assert.equal(check.status, 0, check.stderr);
@@ -70,6 +73,17 @@ try {
         try { assert.equal((await request('/_owner')).status, 200); break; } catch (error) { if (index >= 30 || nginx.exitCode !== null) throw error; await new Promise(resolve => setTimeout(resolve, 40)); }
     }
     if (domain) { const alias = await request('/_owner?from=footer', 'GET', undefined, { Host: 'www.blog.example.test:' + port }); assert.equal(alias.status, 308); assert.equal(alias.headers.location, origin + '/_owner?from=footer'); }
+    if (!insecure && http2 !== 'off') {
+        const client = connectHttp2(transport, { ca, servername: domain ? hostname : 'localhost', checkServerIdentity: (_, cert) => checkServerIdentity(hostname, cert) });
+        try {
+            const stream = client.request({ ':path': '/', ':authority': hostname + ':' + port });
+            stream.resume();
+            const [headers] = await once(stream, 'response');
+            assert.equal(client.alpnProtocol, 'h2');
+            assert.equal(headers[':status'], 200);
+            await once(stream, 'end');
+        } finally { client.close(); }
+    }
     const page = await request('/'); assert.equal(page.status, 200); assert(page.text.includes('class="footer-owner" href="/_owner?from=footer"'));
     assert.equal((await request('/owner.html')).status, 404);
     assert.equal((await request('/api/owner/entries')).status, 401);

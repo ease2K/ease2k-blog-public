@@ -1,21 +1,33 @@
-import { Component, lazy, Suspense, useEffect } from "react";
+import { Component, lazy, Suspense, useEffect, useRef } from "react";
 import type { OutlineHandler } from "@/components/article-toc";
 
 type Props = { text: string; lang: "zh" | "en"; onOutline?: OutlineHandler; owner?: boolean; searchQuery?: string };
-let pending: ReturnType<typeof importMarkdown> | undefined;
-function importMarkdown() { return import("@/components/markdown-body"); }
+type MarkdownModule = typeof import("@/components/markdown-body");
+let pending: Promise<MarkdownModule> | undefined;
+let loaded: MarkdownModule | undefined;
 function loadMarkdown() {
-    return pending ||= importMarkdown().catch(error => { pending = undefined; throw error; });
+    return pending ||= import("@/components/markdown-body").then(module => {
+        loaded = module;
+        return module;
+    }).catch(error => { pending = undefined; throw error; });
 }
-const MarkdownBody = lazy(loadMarkdown);
+const LazyMarkdown = lazy(loadMarkdown);
+
+export function bodyFormat(text: string) {
+    if (!/[`*_~\[\]<>#$|\\&@]/.test(text)
+        && !/(^|\n)(?:\s*(?:[-+]\s|\d+[.)]\s|[-=]{3,}\s*$)| {4}|\t)|https?:\/\/|www\./im.test(text)) return "plain";
+    return /\$\$|(^|[^\\])\$(?=\S)[^\n]*[^\\]\$/.test(text) ? "math" : "markdown";
+}
+
+export async function prepareBody(format: ReturnType<typeof bodyFormat>) {
+    if (format === "plain") return;
+    const markdown = await loadMarkdown();
+    if (format === "math") await markdown.prepareMath();
+}
 export function preloadBody() { void loadMarkdown().catch(() => {}); }
-function plainText(text: string) {
-    return !/[`*_~\[\]<>#$|\\&@]/.test(text)
-        && !/(^|\n)(?:\s*(?:[-+]\s|\d+[.)]\s|[-=]{3,}\s*$)| {4}|\t)|https?:\/\/|www\./im.test(text);
-}
-function PlainBody({ text, onOutline, pending = false }: Props & { pending?: boolean }) {
+function PlainBody({ text, onOutline }: Props) {
     useEffect(() => { onOutline?.([], ""); }, [text, onOutline]);
-    return <div className="prose" data-reading-ready={pending ? undefined : "true"}>{text.split(/\n[ \t]*\n/).filter(part => part.trim()).map((part, index) => <p key={index} style={{ whiteSpace: "pre-wrap" }}>{part}</p>)}</div>;
+    return <div className="prose" data-reading-ready="true">{text.split(/\n[ \t]*\n/).filter(part => part.trim()).map((part, index) => <p key={index} style={{ whiteSpace: "pre-wrap" }}>{part}</p>)}</div>;
 }
 class BodyBoundary extends Component<Props & { children: React.ReactNode }, { failed: boolean }> {
     state = { failed: false };
@@ -29,6 +41,12 @@ class BodyBoundary extends Component<Props & { children: React.ReactNode }, { fa
     }
 }
 export default function ArticleBody(props: Props) {
-    if (plainText(props.text)) return <PlainBody {...props} />;
-    return <BodyBoundary {...props}><Suspense fallback={<PlainBody {...props} pending />}><MarkdownBody {...props} /></Suspense></BodyBoundary>;
+    const MarkdownBody = useRef(loaded?.default || LazyMarkdown).current;
+    const format = bodyFormat(props.text);
+    if (format === "plain") return <PlainBody {...props} />;
+    return <BodyBoundary {...props}>
+        <Suspense fallback={<p className="language-note" role="status">{props.lang === "zh" ? "正在排版正文…" : "Formatting article…"}</p>}>
+            <MarkdownBody {...props} needsMath={format === "math"} />
+        </Suspense>
+    </BodyBoundary>;
 }

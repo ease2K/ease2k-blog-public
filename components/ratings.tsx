@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
+import atcoderIcon from "@/assets/brands/atcoder.webp?no-inline";
 import snapshot from "@/lib/ratings-snapshot.json";
 import { ratingColor } from "@/lib/rating-colors.mjs";
 import { profiles } from "@/lib/content";
@@ -33,7 +34,7 @@ export default function Ratings({ lang }: { lang: "zh" | "en" }) {
             const value = data[platform], label = platform === "codeforces" ? "Codeforces" : "AtCoder";
             const updated = new Intl.DateTimeFormat(lang === "zh" ? "zh-CN" : "en-GB", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(value.fetchedAt));
             return <a className="rating-card" href={profiles[platform]} key={platform} target="_blank" rel="noopener noreferrer">
-                <span className="rating-platform"><img src={platform === "codeforces" ? "/brands/codeforces.ico" : "/brands/atcoder.png"} width="20" height="20" alt="" />{label}<ArrowUpRight size={15} /></span>
+                <span className="rating-platform"><img src={platform === "codeforces" ? "/brands/codeforces.ico" : atcoderIcon} width="20" height="20" alt="" />{label}<ArrowUpRight size={15} /></span>
                 <span className="rating-values"><strong style={{ color: ratingColor(platform, value.rating) }}>{value.rating ?? t("未定级", "Unrated")}</strong><span>Rating</span><small>{t("历史最高", "Peak")} <b style={{ color: ratingColor(platform, value.maxRating) }}>{value.maxRating ?? "—"}</b></small></span>
                 <span className="rating-updated">{loading ? t("正在更新…", "Updating…") : value.stale ? t("上次数据", "Last known") : t("更新于", "Updated")} <time dateTime={value.fetchedAt}>{updated}</time> UTC+8</span>
             </a>;
